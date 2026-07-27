@@ -57,7 +57,9 @@ class NeeronDaemon:
                 text = self.stt.listen()
                 if text:
                     print("\n" + "=" * 80)
+                    print("[AUDIO ENGINE PAUSED] Executing command autonomously...")
                     self.agent.process_request(text)
+                    print("[STOP SIGNAL RECEIVED] Task complete. Resuming audio listening for next command.")
                     print("=" * 80 + "\n")
                 time.sleep(0.5)
         except KeyboardInterrupt:

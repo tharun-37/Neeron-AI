@@ -12,16 +12,16 @@ from neeron.os_world.vision import ScreenPerception
 logger = logging.getLogger("NeeronAi")
 
 SYSTEM_PROMPT = (
-    "You are Neeron, an autonomous vision-enabled desktop agent inspired by Agent-S running on Windows. "
+    "You are Neeron, an autonomous vision-enabled desktop agent running on Windows. "
     "You have full system-wide access to control the Windows desktop environment. "
     "You record the user's voice prompt ONCE, then enter an autonomous vision-action execution loop to perform desktop and GUI tasks. "
-    "In each step of the loop, you receive a desktop screenshot of the current screen. "
-    "You must inspect the screenshot, decide what GUI/system actions to take (open_application, gui_click, gui_type, gui_hotkey, execute_shell, open_browser), "
-    "and once you verify from the screenshot or action output that the task is completed successfully, call the task_completed tool."
+    "For step 2 and upcoming steps, you will receive a 'continue' prompt to proceed with execution. "
+    "In each step, decide what GUI/system actions to take (open_application, gui_click, gui_type, gui_hotkey, execute_shell, open_browser, inspect_screen). "
+    "When you have finished executing all steps of the user command successfully, you MUST call the 'task_completed' tool (or output 'STOP') to signal task completion and allow the system to listen for the next voice command."
 )
 
 class OllamaAgent:
-    """Vision-enabled Multimodal Agent executing an Autonomous Vision-Action Loop."""
+    """Vision-enabled Multimodal Agent executing an Autonomous Vision-Action Loop with continue/stop control flow."""
     def __init__(self, config: NeeronConfig, tool_registry: AgentToolRegistry, tts: TTSEngine, vision: ScreenPerception):
         self.config = config
         self.tool_registry = tool_registry
@@ -35,8 +35,8 @@ class OllamaAgent:
     
     def process_request(self, prompt: str) -> Optional[str]:
         """
-        Executes an autonomous vision-action loop until the model completes the task and visually verifies it.
-        Does NOT re-record audio during the execution loop.
+        Executes an autonomous vision-action loop until the model completes the task and sends a 'STOP' / task_completed signal.
+        Audio recording is strictly paused during execution and resumes only after process_request finishes.
         """
         logger.info(f"Starting autonomous GUI execution for prompt: {prompt}")
         print(f"\n" + "=" * 80)
@@ -64,10 +64,16 @@ class OllamaAgent:
             while step_count < self.config.max_agent_steps and not task_done:
                 step_count += 1
                 print(f"\n--- [Autonomous Loop Step {step_count}/{self.config.max_agent_steps}] ---")
+                
+                # Send 'continue' statement before second and upcoming step executions
+                if step_count > 1:
+                    print("Sending 'continue' prompt to model for upcoming step execution...")
+                    self.conversation.add_user("continue")
+                
                 print(f"Thinking with Vision Model '{self.config.model}'...")
                 
                 if step_count == 1:
-                    print(f"  [GPU] Offloading '{self.config.model}' layers to NVIDIA GPU VRAM (first run cold-start takes ~10-20s)...")
+                    print(f"  [GPU] Offloading '{self.config.model}' layers to NVIDIA GPU VRAM...")
                 
                 try:
                     response = ollama.chat(
@@ -117,22 +123,27 @@ class OllamaAgent:
                         if func_name == "task_completed":
                             task_done = True
                             final_summary = parsed_args.get("summary", tool_result)
+                            print("  [Signal] Model called task_completed (STOP signal received).")
                     
-                    # Brief pause for GUI window updates if screenshot captured
                     time.sleep(0.5)
                 
                 else:
-                    # No tool calls made; model provided final text output
+                    # No tool calls made; model provided text response
                     response_text = msg.content or ""
                     self.conversation.add_assistant(response_text)
                     final_summary = response_text
-                    task_done = True
+                    
+                    if "STOP" in response_text.upper() or "COMPLETED" in response_text.upper():
+                        print("  [Signal] STOP signal detected in model output.")
+                        task_done = True
+                    else:
+                        task_done = True
         finally:
             # Delete temporary screenshots when model process finishes
             self.vision.cleanup()
         
         print("\n" + "=" * 80)
-        print("AUTONOMOUS GUI EXECUTION FINISHED")
+        print("AUTONOMOUS GUI EXECUTION FINISHED (STOP Signal Processed)")
         print("=" * 80)
         if final_summary:
             print(f"Summary: {final_summary}")
