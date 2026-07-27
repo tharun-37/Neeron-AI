@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
 from neeron.os_world.app_manager import DesktopAppManager
 from neeron.os_world.system import SystemController
 from neeron.os_world.vision import ScreenPerception
@@ -9,12 +9,14 @@ from neeron.os_world.gui_controller import GUIController
 logger = logging.getLogger("NeeronAi")
 
 class AgentToolRegistry:
-    """Tool definition registry and execution dispatcher including GUI, Vision, and Task Completion tools."""
-    def __init__(self, app_manager: DesktopAppManager, system_controller: SystemController, vision: ScreenPerception, gui: GUIController):
+    """Tool definition registry and execution dispatcher including GUI, Vision, Voice Input, and Task Completion tools."""
+    def __init__(self, app_manager: DesktopAppManager, system_controller: SystemController, vision: ScreenPerception, gui: GUIController, stt=None, tts=None):
         self.app_manager = app_manager
         self.system_controller = system_controller
         self.vision = vision
         self.gui = gui
+        self.stt = stt
+        self.tts = tts
     
     def get_tool_definitions(self) -> List[Dict[str, Any]]:
         return [
@@ -32,6 +34,23 @@ class AgentToolRegistry:
                             }
                         },
                         "required": ["summary"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "ask_user_voice",
+                    "description": "Ask the user a clarification question or request voice input mid-task via TTS, and listen for their spoken voice response.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "question": {
+                                "type": "string",
+                                "description": "The question or prompt to speak to the user to request voice clarification."
+                            }
+                        },
+                        "required": ["question"]
                     }
                 }
             },
@@ -100,7 +119,7 @@ class AgentToolRegistry:
                 "type": "function",
                 "function": {
                     "name": "open_application",
-                    "description": "Open or launch a desktop application (e.g. 'code', 'firefox', 'calc', 'excel', 'terminal').",
+                    "description": "Open or launch a desktop application (e.g. 'code', 'firefox', 'calc', 'excel', 'terminal', 'chrome').",
                     "parameters": {
                         "type": "object",
                         "properties": {
@@ -160,6 +179,20 @@ class AgentToolRegistry:
             if name == "task_completed":
                 summary = args.get("summary", "Task completed and visually verified.")
                 return f"TASK_COMPLETED: {summary}"
+            
+            elif name == "ask_user_voice":
+                question = args.get("question", "Could you please clarify your request?")
+                print(f"\n[Mid-Task Voice Request]: Neeron asks: '{question}'")
+                if self.tts:
+                    self.tts.speak(question)
+                if self.stt:
+                    print("[Voice Input]: Listening for your spoken answer...")
+                    user_reply = self.stt.listen()
+                    if user_reply:
+                        print(f"[Voice Input Received]: '{user_reply}'")
+                        return f"User spoken response: {user_reply}"
+                    return "User did not provide a voice response."
+                return f"Voice interaction unavailable. Question asked was: {question}"
             
             elif name == "inspect_screen":
                 screenshot = self.vision.capture_screenshot()

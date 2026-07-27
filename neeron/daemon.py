@@ -40,7 +40,9 @@ class NeeronDaemon:
             app_manager=self.app_manager,
             system_controller=self.system_controller,
             vision=self.vision,
-            gui=self.gui
+            gui=self.gui,
+            stt=self.stt,
+            tts=self.tts
         )
         self.agent = OllamaAgent(
             config=self.config,
