@@ -9,7 +9,7 @@ from neeron.os_world.gui_controller import GUIController
 logger = logging.getLogger("NeeronAi")
 
 class AgentToolRegistry:
-    """Tool definition registry and execution dispatcher including GUI, Vision, Voice Input, and Task Completion tools."""
+    """Tool definition registry and execution dispatcher including GUI, Vision, Selenium Web Automation, Voice Input, and Task Completion tools."""
     def __init__(self, app_manager: DesktopAppManager, system_controller: SystemController, vision: ScreenPerception, gui: GUIController, stt=None, tts=None):
         self.app_manager = app_manager
         self.system_controller = system_controller
@@ -51,6 +51,63 @@ class AgentToolRegistry:
                             }
                         },
                         "required": ["question"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "open_browser",
+                    "description": "Open a website URL in Selenium Firefox/Chrome browser.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "url": {"type": "string", "description": "URL to open (e.g. 'google.com', 'github.com')"}
+                        },
+                        "required": ["url"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "browser_click",
+                    "description": "Click a link, button, or element on the active Selenium webpage by visible text, ID, placeholder, CSS selector, or XPath.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "query": {"type": "string", "description": "Visible text, ID, name, placeholder, CSS, or XPath of the element to click (e.g. 'Search', 'Sign In', '#submit-btn')"}
+                        },
+                        "required": ["query"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "browser_type",
+                    "description": "Type text into a search bar or input field on the active Selenium webpage.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "query": {"type": "string", "description": "Placeholder, name, ID, CSS, or XPath of input field (e.g. 'q', 'search', 'email', 'username')"},
+                            "text": {"type": "string", "description": "Text content to type into the webpage input field"},
+                            "press_enter": {"type": "boolean", "description": "Whether to press Enter key after typing", "default": True}
+                        },
+                        "required": ["query", "text"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "browser_scroll",
+                    "description": "Scroll the active webpage up or down.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "direction": {"type": "string", "description": "Scroll direction: 'down' or 'up'", "default": "down"}
+                        }
                     }
                 }
             },
@@ -156,20 +213,6 @@ class AgentToolRegistry:
                         "required": ["command"]
                     }
                 }
-            },
-            {
-                "type": "function",
-                "function": {
-                    "name": "open_browser",
-                    "description": "Open a website URL in the browser.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "url": {"type": "string", "description": "URL to open"}
-                        },
-                        "required": ["url"]
-                    }
-                }
             }
         ]
     
@@ -193,6 +236,24 @@ class AgentToolRegistry:
                         return f"User spoken response: {user_reply}"
                     return "User did not provide a voice response."
                 return f"Voice interaction unavailable. Question asked was: {question}"
+            
+            elif name == "open_browser":
+                url = args.get("url", "")
+                return self.system_controller.open_browser(url)
+            
+            elif name == "browser_click":
+                query = args.get("query", "")
+                return self.system_controller.browser_click(query)
+            
+            elif name == "browser_type":
+                query = args.get("query", "")
+                text = args.get("text", "")
+                press_enter = bool(args.get("press_enter", True))
+                return self.system_controller.browser_type(query, text, press_enter=press_enter)
+            
+            elif name == "browser_scroll":
+                direction = args.get("direction", "down")
+                return self.system_controller.browser_scroll(direction)
             
             elif name == "inspect_screen":
                 screenshot = self.vision.capture_screenshot()
@@ -232,10 +293,6 @@ class AgentToolRegistry:
                 cmd = args.get("command", "")
                 res = self.system_controller.execute_shell(cmd)
                 return res.output if res.success else f"Error: {res.error}"
-            
-            elif name == "open_browser":
-                url = args.get("url", "")
-                return self.system_controller.open_browser(url)
             
             else:
                 return f"Unknown tool: {name}"

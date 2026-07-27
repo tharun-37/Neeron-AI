@@ -33,10 +33,11 @@ class CommandValidator:
         return True, None
 
 class SystemController:
-    """System and environment execution controller supporting Windows PowerShell/CMD & Linux."""
+    """System and browser execution controller supporting Windows PowerShell/CMD & Firefox/Chrome Selenium Web Automation."""
     def __init__(self, temp_dir: Optional[Path] = None):
         self.temp_dir = Path(temp_dir) if temp_dir else Path(tempfile.mkdtemp(prefix="neeron_"))
         self.validator = CommandValidator()
+        self.driver = None
     
     def execute_shell(self, command: str) -> CommandResult:
         is_valid, reason = self.validator.validate(command)
@@ -49,7 +50,6 @@ class SystemController:
         
         try:
             if sys.platform == "win32":
-                # Run via PowerShell on Windows for maximum flexibility
                 cmd_exec = ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", command]
             else:
                 cmd_exec = command
@@ -80,21 +80,160 @@ class SystemController:
         except Exception as e:
             return CommandResult(success=False, output="", error=str(e), command=command)
     
+    def get_browser_driver(self):
+        """Initializes or returns active Selenium WebDriver (Firefox default, Chrome fallback)."""
+        if self.driver is not None:
+            try:
+                _ = self.driver.window_handles
+                return self.driver
+            except Exception:
+                self.driver = None
+        
+        # 1. Try Firefox (GeckoDriver)
+        try:
+            from selenium import webdriver
+            from selenium.webdriver.firefox.service import Service as FirefoxService
+            from webdriver_manager.firefox import GeckoDriverManager
+            
+            options = webdriver.FirefoxOptions()
+            options.add_argument("--width=1280")
+            options.add_argument("--height=800")
+            
+            logger.info("Initializing Selenium Firefox Driver...")
+            service = FirefoxService(GeckoDriverManager().install())
+            self.driver = webdriver.Firefox(service=service, options=options)
+            logger.info("Selenium Firefox Driver initialized successfully")
+            return self.driver
+        except Exception as e:
+            logger.warning(f"Firefox Selenium driver failed: {e}. Trying Chrome fallback...")
+        
+        # 2. Try Chrome fallback
+        try:
+            from selenium import webdriver
+            from selenium.webdriver.chrome.service import Service as ChromeService
+            from webdriver_manager.chrome import ChromeDriverManager
+            
+            options = webdriver.ChromeOptions()
+            options.add_argument("--start-maximized")
+            
+            logger.info("Initializing Selenium Chrome Driver...")
+            service = ChromeService(ChromeDriverManager().install())
+            self.driver = webdriver.Chrome(service=service, options=options)
+            logger.info("Selenium Chrome Driver initialized successfully")
+            return self.driver
+        except Exception as e:
+            logger.error(f"Failed to initialize any Selenium browser driver: {e}")
+            return None
+    
     def open_browser(self, url: str) -> str:
-        """Opens a web URL across Windows and Linux."""
+        """Opens a web URL using Selenium Firefox / Chrome browser."""
         if not url.startswith("http://") and not url.startswith("https://"):
             url = "https://" + url
         
         try:
-            if sys.platform == "win32":
-                os.startfile(url)
-                return f"Opened web URL {url} in default Windows browser"
+            driver = self.get_browser_driver()
+            if driver:
+                driver.get(url)
+                return f"Opened URL '{url}' in Selenium browser ({driver.name})"
             else:
-                subprocess.Popen(["xdg-open", url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                return f"Opened web URL {url} in system browser"
+                # Fallback to system startfile
+                if sys.platform == "win32":
+                    os.startfile(url)
+                    return f"Opened web URL '{url}' in default Windows browser"
+                else:
+                    subprocess.Popen(["xdg-open", url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    return f"Opened web URL '{url}' in system browser"
         except Exception as e:
             logger.error(f"Failed to open browser: {e}")
             return f"Error opening URL {url}: {e}"
     
+    def browser_click(self, query: str) -> str:
+        """Clicks an element on the webpage by visible text, ID, name, placeholder, CSS, or XPath."""
+        driver = self.get_browser_driver()
+        if not driver:
+            return "Browser driver not running"
+        
+        from selenium.webdriver.common.by import By
+        from selenium.webdriver.support.ui import WebDriverWait
+        from selenium.webdriver.support import expected_conditions as EC
+        
+        strategies = [
+            (By.XPATH, f"//*[contains(text(), '{query}')]"),
+            (By.XPATH, f"//*[@placeholder='{query}' or @name='{query}' or @id='{query}']"),
+            (By.XPATH, f"//a[contains(text(), '{query}')]"),
+            (By.XPATH, f"//button[contains(text(), '{query}')]"),
+            (By.XPATH, f"//*[@aria-label='{query}']"),
+            (By.CSS_SELECTOR, query),
+            (By.XPATH, query)
+        ]
+        
+        for by, val in strategies:
+            try:
+                elements = driver.find_elements(by, val)
+                for elem in elements:
+                    if elem.is_displayed():
+                        try:
+                            elem.click()
+                            return f"Clicked element matching '{query}'"
+                        except Exception:
+                            # Try JavaScript click
+                            driver.execute_script("arguments[0].click();", elem)
+                            return f"Clicked element matching '{query}' via JS"
+            except Exception:
+                continue
+        
+        return f"Could not find or click element matching '{query}' on webpage"
+    
+    def browser_type(self, query: str, text: str, press_enter: bool = True) -> str:
+        """Types text into an input field on the webpage by placeholder, name, ID, CSS, or XPath."""
+        driver = self.get_browser_driver()
+        if not driver:
+            return "Browser driver not running"
+        
+        from selenium.webdriver.common.by import By
+        from selenium.webdriver.common.keys import Keys
+        
+        strategies = [
+            (By.XPATH, f"//input[@placeholder='{query}' or @name='{query}' or @id='{query}' or @aria-label='{query}']"),
+            (By.XPATH, f"//textarea[@placeholder='{query}' or @name='{query}' or @id='{query}']"),
+            (By.XPATH, f"//*[contains(@placeholder, '{query}')]"),
+            (By.XPATH, f"//input[contains(@name, '{query}')]"),
+            (By.CSS_SELECTOR, query),
+            (By.XPATH, query)
+        ]
+        
+        for by, val in strategies:
+            try:
+                elements = driver.find_elements(by, val)
+                for elem in elements:
+                    if elem.is_displayed():
+                        elem.clear()
+                        elem.send_keys(text)
+                        if press_enter:
+                            elem.send_keys(Keys.RETURN)
+                        return f"Typed '{text}' into webpage field matching '{query}' (press_enter={press_enter})"
+            except Exception:
+                continue
+        
+        return f"Could not find input field matching '{query}' on webpage"
+    
+    def browser_scroll(self, direction: str = "down") -> str:
+        """Scrolls the webpage up or down."""
+        driver = self.get_browser_driver()
+        if not driver:
+            return "Browser driver not running"
+        
+        try:
+            amount = 600 if direction.lower() == "down" else -600
+            driver.execute_script(f"window.scrollBy(0, {amount});")
+            return f"Scrolled webpage {direction}"
+        except Exception as e:
+            return f"Error scrolling browser: {e}"
+    
     def cleanup(self):
-        pass
+        if self.driver:
+            try:
+                self.driver.quit()
+            except Exception:
+                pass
+            self.driver = None

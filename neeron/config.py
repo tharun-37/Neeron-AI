@@ -29,7 +29,7 @@ class NeeronConfig:
     model: str = "gemma4:e4b-it-qat"   # Vision + Text model
     ollama_url: str = "http://localhost:11434"
     audio_energy_threshold: int = 50
-    audio_timeout: int = 25
+    audio_timeout: int = 20
     max_history: int = 50
     max_agent_steps: int = 10          # Max GUI steps
     log_level: str = "INFO"

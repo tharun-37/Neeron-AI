@@ -1,4 +1,4 @@
- Sal Figures faster-whisper
+faster-whisper
 pyttsx3
 pyautogui
 pillow
@@ -9,3 +9,5 @@ psutil
 numpy
 mss
 opencv-python
+selenium
+webdriver-manager
