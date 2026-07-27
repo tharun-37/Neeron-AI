@@ -119,8 +119,10 @@ class OllamaAgent:
                         
                         tool_id = getattr(tool_call, 'id', func_name)
                         tool_msg = {"role": "tool", "tool_call_id": tool_id, "content": str(tool_result)}
-                        if func_name == "inspect_screen" and self.vision.latest_screenshot_path:
-                            tool_msg["images"] = [self.vision.latest_screenshot_path]
+                        if func_name in ["inspect_screen", "browser_click", "open_browser"]:
+                            screenshot = self.vision.capture_screenshot()
+                            if screenshot:
+                                tool_msg["images"] = [screenshot]
                         self.conversation.history.append(tool_msg)
                         
                         if func_name == "task_completed":

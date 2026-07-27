@@ -126,7 +126,7 @@ class SystemController:
             return None
     
     def open_browser(self, url: str) -> str:
-        """Opens a web URL using Selenium Firefox / Chrome browser."""
+        """Opens a web URL using Selenium Firefox / Chrome browser and pauses 1s for page render."""
         if not url.startswith("http://") and not url.startswith("https://"):
             url = "https://" + url
         
@@ -134,9 +134,9 @@ class SystemController:
             driver = self.get_browser_driver()
             if driver:
                 driver.get(url)
-                return f"Opened URL '{url}' in Selenium browser ({driver.name})"
+                time.sleep(1.0)
+                return f"Opened URL '{url}' in Selenium browser ({driver.name}) and completed rendering."
             else:
-                # Fallback to system startfile
                 if sys.platform == "win32":
                     os.startfile(url)
                     return f"Opened web URL '{url}' in default Windows browser"
@@ -148,14 +148,15 @@ class SystemController:
             return f"Error opening URL {url}: {e}"
     
     def browser_click(self, query: str) -> str:
-        """Clicks an element on the webpage by visible text, ID, name, placeholder, CSS, or XPath."""
+        """Clicks an element on the webpage, waits up to 5s for redirection, and pauses 1s for page render."""
         driver = self.get_browser_driver()
         if not driver:
             return "Browser driver not running"
         
         from selenium.webdriver.common.by import By
-        from selenium.webdriver.support.ui import WebDriverWait
-        from selenium.webdriver.support import expected_conditions as EC
+        
+        old_url = driver.current_url
+        old_title = driver.title
         
         strategies = [
             (By.XPATH, f"//*[contains(text(), '{query}')]"),
@@ -167,6 +168,7 @@ class SystemController:
             (By.XPATH, query)
         ]
         
+        clicked = False
         for by, val in strategies:
             try:
                 elements = driver.find_elements(by, val)
@@ -174,15 +176,42 @@ class SystemController:
                     if elem.is_displayed():
                         try:
                             elem.click()
-                            return f"Clicked element matching '{query}'"
+                            clicked = True
+                            break
                         except Exception:
-                            # Try JavaScript click
                             driver.execute_script("arguments[0].click();", elem)
-                            return f"Clicked element matching '{query}' via JS"
+                            clicked = True
+                            break
+                if clicked:
+                    break
             except Exception:
                 continue
         
-        return f"Could not find or click element matching '{query}' on webpage"
+        if not clicked:
+            return f"Could not find or click element matching '{query}' on webpage"
+        
+        # Wait up to 5 seconds for page redirection/navigation to take effect
+        redirected = False
+        start_wait = time.time()
+        while time.time() - start_wait < 5.0:
+            time.sleep(0.5)
+            try:
+                if driver.current_url != old_url or driver.title != old_title:
+                    redirected = True
+                    break
+            except Exception:
+                pass
+        
+        # After redirection completes (or after 5s wait), pause 1 extra second for rendering
+        time.sleep(1.0)
+        
+        new_url = driver.current_url
+        if redirected:
+            logger.info(f"Page redirected from {old_url} -> {new_url}")
+            return f"Clicked '{query}'. Redirection successful to: {new_url} (rendering complete)."
+        else:
+            logger.info(f"No URL redirection detected after 5s for '{query}'. Current URL: {new_url}")
+            return f"Clicked '{query}'. Current URL: {new_url}. No URL change detected after 5s wait (rendering complete)."
     
     def browser_type(self, query: str, text: str, press_enter: bool = True) -> str:
         """Types text into an input field on the webpage by placeholder, name, ID, CSS, or XPath."""
@@ -211,6 +240,7 @@ class SystemController:
                         elem.send_keys(text)
                         if press_enter:
                             elem.send_keys(Keys.RETURN)
+                            time.sleep(1.0)
                         return f"Typed '{text}' into webpage field matching '{query}' (press_enter={press_enter})"
             except Exception:
                 continue
@@ -226,6 +256,7 @@ class SystemController:
         try:
             amount = 600 if direction.lower() == "down" else -600
             driver.execute_script(f"window.scrollBy(0, {amount});")
+            time.sleep(0.5)
             return f"Scrolled webpage {direction}"
         except Exception as e:
             return f"Error scrolling browser: {e}"
