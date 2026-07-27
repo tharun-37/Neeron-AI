@@ -1,0 +1,11 @@
+ Sal Figures faster-whisper
+pyttsx3
+pyautogui
+pillow
+pyaudio
+ollama
+pygetwindow
+psutil
+numpy
+mss
+opencv-python

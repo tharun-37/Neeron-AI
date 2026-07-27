@@ -1,0 +1,30 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Virtual environment
+venv/
+env/
+ENV/
+
+# Logs and databases
+*.log
+neeron_ai.log
+
+# User-specific config / runtime files
+neeron_config.json
+*.png
+*.jpg
+*.jpeg
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# IDE settings
+.vscode/
+.idea/
