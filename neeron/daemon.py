@@ -72,6 +72,7 @@ class NeeronDaemon:
     def shutdown(self):
         logger.info("Shutting down Neeron AI subsystems...")
         self.system_controller.cleanup()
+        self.vision.cleanup()
         logger.info("Shutdown complete.")
 
 def start_daemon(config_path: str = "neeron_config.json"):

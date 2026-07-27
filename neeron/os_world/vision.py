@@ -1,4 +1,5 @@
 import os
+import time
 import shutil
 import tempfile
 import logging
@@ -15,8 +16,9 @@ class ScreenPerception:
         self.latest_screenshot_path: Optional[str] = None
     
     def capture_screenshot(self) -> Optional[str]:
-        """Captures desktop screen on-demand and saves PNG file for vision model input."""
-        target_path = self.output_dir / "latest_screen.png"
+        """Captures desktop screen on-demand and saves unique timestamped PNG file for vision model input."""
+        filename = f"screen_{int(time.time() * 1000)}.png"
+        target_path = self.output_dir / filename
         
         # 1. Try mss (fastest cross-platform screen capture)
         try:
@@ -59,13 +61,13 @@ class ScreenPerception:
         return None
     
     def cleanup(self):
-        """Deletes all screenshot files generated during processing."""
+        """Deletes all screenshot files when the application fully shuts down."""
         try:
             if self.output_dir.exists():
                 for file in self.output_dir.glob("*.png"):
                     try:
                         file.unlink()
-                        logger.info(f"Deleted screenshot: {file}")
+                        logger.info(f"Deleted session screenshot: {file}")
                     except Exception as e:
                         logger.warning(f"Could not delete screenshot {file}: {e}")
             self.latest_screenshot_path = None

@@ -63,8 +63,7 @@ class OllamaAgent:
         task_done = False
         final_summary = ""
         
-        try:
-            while step_count < self.config.max_agent_steps and not task_done:
+        while step_count < self.config.max_agent_steps and not task_done:
                 step_count += 1
                 print(f"\n--- [Autonomous Loop Step {step_count}/{self.config.max_agent_steps}] ---")
                 
@@ -143,9 +142,6 @@ class OllamaAgent:
                         task_done = True
                     else:
                         task_done = True
-        finally:
-            # Delete temporary screenshots when model process finishes
-            self.vision.cleanup()
         
         print("\n" + "=" * 80)
         print("AUTONOMOUS GUI EXECUTION FINISHED (STOP Signal Processed)")
