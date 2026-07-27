@@ -41,7 +41,7 @@ class AgentToolRegistry:
                 "type": "function",
                 "function": {
                     "name": "ask_user_voice",
-                    "description": "Ask the user a clarification question or request voice input mid-task via TTS, and listen for their spoken voice response.",
+                    "description": "Ask the user a clarification question, request login credentials/confirmation, or request voice input mid-task via TTS. ALWAYS use this tool when encountering login screens, authentication prompts, passwords, or security-sensitive tasks.",
                     "parameters": {
                         "type": "object",
                         "properties": {
