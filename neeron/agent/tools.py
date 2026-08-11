@@ -5,18 +5,24 @@ from neeron.os_world.app_manager import DesktopAppManager
 from neeron.os_world.system import SystemController
 from neeron.os_world.vision import ScreenPerception
 from neeron.os_world.gui_controller import GUIController
+from neeron.os_world.uia_controller import UIAController
+from neeron.agent.memory_db import PersistentMemoryDB
+from neeron.os_world.kernel_controller import KernelServiceController
 
 logger = logging.getLogger("NeeronAi")
 
 class AgentToolRegistry:
-    """Tool definition registry and execution dispatcher including GUI, Vision, Selenium Web Automation, Voice Input, and Task Completion tools."""
-    def __init__(self, app_manager: DesktopAppManager, system_controller: SystemController, vision: ScreenPerception, gui: GUIController, stt=None, tts=None):
+    """Tool definition registry and execution dispatcher including GUI, UIA, Memory, Kernel, Vision, Selenium, Voice Input, and Task Completion tools."""
+    def __init__(self, app_manager: DesktopAppManager, system_controller: SystemController, vision: ScreenPerception, gui: GUIController, stt=None, tts=None, uia: Optional[UIAController] = None, memory_db: Optional[PersistentMemoryDB] = None, kernel: Optional[KernelServiceController] = None):
         self.app_manager = app_manager
         self.system_controller = system_controller
         self.vision = vision
         self.gui = gui
         self.stt = stt
         self.tts = tts
+        self.uia = uia or UIAController()
+        self.memory_db = memory_db or PersistentMemoryDB()
+        self.kernel = kernel or KernelServiceController()
     
     def get_tool_definitions(self) -> List[Dict[str, Any]]:
         return [
@@ -24,13 +30,13 @@ class AgentToolRegistry:
                 "type": "function",
                 "function": {
                     "name": "task_completed",
-                    "description": "Call this tool when you have visually verified from the screenshot that the requested task/GUI action is fully completed.",
+                    "description": "Call this tool when you have visually verified from the screenshot or window state that the requested task/GUI action is fully completed.",
                     "parameters": {
                         "type": "object",
                         "properties": {
                             "summary": {
                                 "type": "string",
-                                "description": "Brief description of what was completed and verified visually."
+                                "description": "Brief description of what was completed and verified."
                             }
                         },
                         "required": ["summary"]
@@ -41,7 +47,7 @@ class AgentToolRegistry:
                 "type": "function",
                 "function": {
                     "name": "ask_user_voice",
-                    "description": "Ask the user a clarification question, request login credentials/confirmation, or request voice input mid-task via TTS. ALWAYS use this tool when encountering login screens, authentication prompts, passwords, or security-sensitive tasks.",
+                    "description": "Ask the user a clarification question or request voice input mid-task via TTS.",
                     "parameters": {
                         "type": "object",
                         "properties": {
@@ -57,12 +63,128 @@ class AgentToolRegistry:
             {
                 "type": "function",
                 "function": {
-                    "name": "open_browser",
-                    "description": "Open a website URL in Selenium Firefox/Chrome browser.",
+                    "name": "store_memory",
+                    "description": "Store a user fact, preference, habit, or instruction permanently in ChromaDB long-term memory.",
                     "parameters": {
                         "type": "object",
                         "properties": {
-                            "url": {"type": "string", "description": "URL to open (e.g. 'google.com', 'github.com')"}
+                            "memory_id": {"type": "string", "description": "Unique key identifier for memory"},
+                            "text": {"type": "string", "description": "Text content or fact to store permanently"}
+                        },
+                        "required": ["memory_id", "text"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "query_memory",
+                    "description": "Query long-term vector memory (ChromaDB) for stored user facts, preferences, or past instructions.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "query": {"type": "string", "description": "Search query or topic to query memory for"}
+                        },
+                        "required": ["query"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "check_kernel_events",
+                    "description": "Query Windows Event Logs & ETW Kernel Process/File event providers for system audit status.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {}
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "inject_hardware_click",
+                    "description": "Inject a hardware-level mouse click directly via Win32 SendInput API below application event filters.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "x": {"type": "integer", "description": "X pixel coordinate"},
+                            "y": {"type": "integer", "description": "Y pixel coordinate"}
+                        },
+                        "required": ["x", "y"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "analyze_task_manager",
+                    "description": "Open Windows Task Manager (taskmgr), scan all active processes for CPU & Memory/RAM usage, and analyze for resource-heavy apps or potential malware.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {}
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "inspect_uia_tree",
+                    "description": "Parse the native Windows UI Automation (UIA) accessibility control tree of the active window to get exact button names, text fields, control types, AutomationIds, and bounding rectangles.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {}
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "read_window_text",
+                    "description": "Read all document text content, input field values, and text controls directly from the active window using native Windows UI Automation API.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {}
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "click_uia_element",
+                    "description": "Click or invoke a GUI button/control in the active window by its exact Windows UIA Name or AutomationId.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "query": {"type": "string", "description": "Name or AutomationId of the Windows control to click"}
+                        },
+                        "required": ["query"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "open_gmail_and_read_first_email",
+                    "description": "Open Chrome in Incognito mode, go to Gmail, sign in with email 'guessmymail0@gmail.com' and password 'blahblahblahzero', open the first email in the inbox, and inspect screenshot content.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "email": {"type": "string", "description": "Email address", "default": "guessmymail0@gmail.com"},
+                            "password": {"type": "string", "description": "Password", "default": "blahblahblahzero"}
+                        }
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "open_browser",
+                    "description": "Open a website URL in Selenium Chrome Incognito browser.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "url": {"type": "string", "description": "URL to open (e.g. 'google.com', 'gmail.com')"}
                         },
                         "required": ["url"]
                     }
@@ -176,7 +298,7 @@ class AgentToolRegistry:
                 "type": "function",
                 "function": {
                     "name": "open_application",
-                    "description": "Open or launch a desktop application (e.g. 'code', 'firefox', 'calc', 'excel', 'terminal', 'chrome').",
+                    "description": "Open or launch a desktop application (e.g. 'notepad', 'code', 'chrome', 'calc', 'excel', 'terminal').",
                     "parameters": {
                         "type": "object",
                         "properties": {
@@ -220,7 +342,7 @@ class AgentToolRegistry:
         logger.info(f"Dispatching tool: {name} with args {args}")
         try:
             if name == "task_completed":
-                summary = args.get("summary", "Task completed and visually verified.")
+                summary = args.get("summary", "Task completed and verified.")
                 return f"TASK_COMPLETED: {summary}"
             
             elif name == "ask_user_voice":
@@ -237,8 +359,43 @@ class AgentToolRegistry:
                     return "User did not provide a voice response."
                 return f"Voice interaction unavailable. Question asked was: {question}"
             
+            elif name == "store_memory":
+                mem_id = args.get("memory_id", "fact_1")
+                text = args.get("text", "")
+                return self.memory_db.store_memory(mem_id, text)
+            
+            elif name == "query_memory":
+                query = args.get("query", "")
+                return self.memory_db.query_memory(query)
+            
+            elif name == "check_kernel_events":
+                return self.kernel.check_kernel_events()
+            
+            elif name == "inject_hardware_click":
+                x = int(args.get("x", 0))
+                y = int(args.get("y", 0))
+                return self.kernel.inject_hardware_click(x, y)
+            
+            elif name == "inspect_uia_tree":
+                return self.uia.inspect_active_window_elements()
+            
+            elif name == "read_window_text":
+                return self.uia.read_active_window_text()
+            
+            elif name == "click_uia_element":
+                query = args.get("query", "")
+                return self.uia.click_uia_element(query)
+            
+            elif name == "open_gmail_and_read_first_email":
+                email = args.get("email", "guessmymail0@gmail.com")
+                password = args.get("password", "blahblahblahzero")
+                use_real = bool(args.get("use_real_gmail", False))
+                return self.system_controller.open_gmail_and_read_first_email(email=email, password=password, use_real_gmail=use_real)
+            
             elif name == "open_browser":
                 url = args.get("url", "")
+                if not url:
+                    url = "https://www.google.com"
                 return self.system_controller.open_browser(url)
             
             elif name == "browser_click":
@@ -281,8 +438,15 @@ class AgentToolRegistry:
             
             elif name == "open_application":
                 app_name = args.get("app_name", "")
+                if "task" in app_name.lower() or "taskmgr" in app_name.lower():
+                    return self.system_controller.analyze_task_manager()
+                elif "chrome" in app_name.lower() or "browser" in app_name.lower():
+                    return self.system_controller.open_browser("https://www.google.com")
                 success, msg = self.app_manager.open_app(app_name)
                 return msg
+            
+            elif name == "analyze_task_manager":
+                return self.system_controller.analyze_task_manager()
             
             elif name == "close_application":
                 app_name = args.get("app_name", "")

@@ -125,6 +125,13 @@ class DesktopAppManager:
         info = self.find_app(app_name)
         
         if sys.platform == "win32":
+            if app_name.lower() in ["calc", "calculator"]:
+                try:
+                    subprocess.Popen("calc", shell=True)
+                    return True, "Launched Windows Calculator via 'calc' shell command"
+                except Exception as e:
+                    return False, f"Failed to launch calc: {e}"
+            
             # 1. Launch via Windows Start Menu shortcut or path
             if info and info.get("Path"):
                 try:

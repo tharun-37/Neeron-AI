@@ -58,6 +58,15 @@ class NeeronDaemon:
             while True:
                 text = self.stt.listen()
                 if text:
+                    cmd_clean = text.strip().lower()
+                    if cmd_clean in ["stop", "cancel", "halt"]:
+                        print("\n" + "=" * 80)
+                        print("[USER VOICE STOP INTERRUPT]: Stop signal received from user!")
+                        print("=" * 80 + "\n")
+                        self.tts.speak("Execution stopped.")
+                        time.sleep(0.5)
+                        continue
+                    
                     print("\n" + "=" * 80)
                     print("[AUDIO ENGINE PAUSED] Executing command autonomously...")
                     self.agent.process_request(text)

@@ -6,7 +6,7 @@ from typing import List, Dict, Optional
 logger = logging.getLogger("NeeronAi")
 
 class ConversationManager:
-    """Manages chat history and system prompts for Ollama context with image reference sanitization."""
+    """Manages chat history and system prompts for Ollama context with image reference & role sanitization."""
     def __init__(self, max_history: int = 50, system_prompt: str = ""):
         self.history = deque(maxlen=max_history)
         self.system_prompt = system_prompt
@@ -38,19 +38,32 @@ class ConversationManager:
                     msg.pop("images", None)
     
     def get_history(self) -> List[Dict]:
-        """Returns sanitized conversation history, stripping missing image file references."""
+        """Returns sanitized conversation history compliant with Ollama API specs."""
         self.clean_invalid_images()
         sanitized = []
-        for msg in self.history:
+        
+        # Keep only the latest 2 image attachments to prevent tokenization overflow
+        image_count = 0
+        reversed_history = list(reversed(self.history))
+        
+        for msg in reversed_history:
             msg_copy = dict(msg)
+            
+            # Ensure images are only attached to 'user' messages (Ollama spec constraint)
             if "images" in msg_copy:
-                valid_images = [img for img in msg_copy["images"] if os.path.exists(str(img))]
-                if valid_images:
-                    msg_copy["images"] = valid_images
-                else:
+                if msg_copy.get("role") != "user" or image_count >= 2:
                     msg_copy.pop("images", None)
+                else:
+                    valid_images = [img for img in msg_copy["images"] if os.path.exists(str(img))]
+                    if valid_images:
+                        msg_copy["images"] = valid_images
+                        image_count += len(valid_images)
+                    else:
+                        msg_copy.pop("images", None)
+            
             sanitized.append(msg_copy)
-        return sanitized
+        
+        return list(reversed(sanitized))
     
     def clear(self):
         self.history.clear()

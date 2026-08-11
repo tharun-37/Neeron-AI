@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gmail - Sign in</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Google Sans', Roboto, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background-color: #f0f4f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        /* SIGN-IN CARD */
+        .auth-card {
+            background: #ffffff;
+            border-radius: 28px;
+            width: 450px;
+            padding: 40px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            text-align: center;
+        }
+        .google-logo {
+            width: 75px;
+            margin-bottom: 16px;
+        }
+        .title {
+            font-size: 24px;
+            font-weight: 500;
+            color: #1f1f1f;
+            margin-bottom: 8px;
+        }
+        .subtitle {
+            font-size: 14px;
+            color: #444746;
+            margin-bottom: 24px;
+        }
+        .input-group {
+            margin-bottom: 24px;
+            text-align: left;
+        }
+        .input-field {
+            width: 100%;
+            padding: 16px;
+            font-size: 16px;
+            border: 1px solid #747775;
+            border-radius: 4px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .input-field:focus {
+            border-color: #0b57d0;
+            border-width: 2px;
+        }
+        .btn-next {
+            background-color: #0b57d0;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: 20px;
+            cursor: pointer;
+            float: right;
+            transition: background 0.2s;
+        }
+        .btn-next:hover {
+            background-color: #0842a0;
+        }
+        
+        /* INBOX VIEW */
+        #inbox-view, #email-detail-view {
+            display: none;
+            width: 100vw;
+            height: 100vh;
+            background: #f6f8fc;
+        }
+        .header-bar {
+            height: 64px;
+            background: white;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            justify-content: space-between;
+        }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 22px;
+            color: #444746;
+            font-weight: 500;
+        }
+        .layout {
+            display: flex;
+            height: calc(100vh - 64px);
+        }
+        .sidebar {
+            width: 240px;
+            padding: 16px;
+            background: #f6f8fc;
+            border-right: 1px solid #e0e0e0;
+        }
+        .sidebar-item {
+            padding: 10px 16px;
+            border-radius: 16px;
+            font-size: 14px;
+            color: #444746;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 4px;
+            cursor: pointer;
+        }
+        .sidebar-item.active {
+            background: #c2e7ff;
+            color: #001d35;
+        }
+        .mail-list {
+            flex: 1;
+            background: white;
+            border-radius: 16px;
+            margin: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .email-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .zA {
+            display: table-row;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.15s;
+        }
+        .zA:hover {
+            background: #f2f6fc;
+        }
+        .zA td {
+            padding: 16px 20px;
+            border-bottom: 1px solid #f2f2f2;
+        }
+        .zA .sender {
+            width: 220px;
+            font-weight: 700;
+            color: #202124;
+        }
+        .zA .subject {
+            font-weight: 600;
+            color: #202124;
+        }
+        .zA .snippet {
+            color: #5f6368;
+        }
+        .zA .date {
+            font-size: 12px;
+            font-weight: 600;
+            color: #202124;
+            text-align: right;
+        }
+        
+        /* DETAIL VIEW */
+        .email-card {
+            background: white;
+            margin: 24px;
+            padding: 32px;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            font-size: 16px;
+            color: #202124;
+            line-height: 1.6;
+        }
+        .email-title {
+            font-size: 22px;
+            font-weight: 500;
+            margin-bottom: 16px;
+            color: #1f1f1f;
+        }
+        .email-sender-info {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid #e0e0e0;
+            padding-bottom: 16px;
+            margin-bottom: 24px;
+            color: #5f6368;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- STEP 1: EMAIL SIGN IN -->
+    <div id="step-email" class="auth-card">
+        <svg class="google-logo" viewBox="0 0 75 24">
+            <path fill="#4285F4" d="M9.24 10.74V13.8h7.24c-.29 1.88-2.22 5.51-7.24 5.51-4.36 0-7.92-3.61-7.92-8.06S4.88 3.19 9.24 3.19c2.48 0 4.14 1.06 5.09 1.97l2.44-2.44C15.2 1.25 12.48 0 9.24 0 4.13 0 0 4.13 0 9.24s4.13 9.24 9.24 9.24c5.34 0 8.88-3.75 8.88-9.04 0-.61-.07-1.07-.15-1.7H9.24z"/>
+        </svg>
+        <h1 class="title">Sign in</h1>
+        <p class="subtitle">to continue to Gmail</p>
+        
+        <div class="input-group">
+            <input type="email" id="identifierId" name="identifier" class="input-field" placeholder="Email or phone" value="">
+        </div>
+        
+        <button id="identifierNext" class="btn-next" onclick="goToPassword()">Next</button>
+    </div>
+
+    <!-- STEP 2: PASSWORD SIGN IN -->
+    <div id="step-password" class="auth-card" style="display: none;">
+        <svg class="google-logo" viewBox="0 0 75 24">
+            <path fill="#4285F4" d="M9.24 10.74V13.8h7.24c-.29 1.88-2.22 5.51-7.24 5.51-4.36 0-7.92-3.61-7.92-8.06S4.88 3.19 9.24 3.19c2.48 0 4.14 1.06 5.09 1.97l2.44-2.44C15.2 1.25 12.48 0 9.24 0 4.13 0 0 4.13 0 9.24s4.13 9.24 9.24 9.24c5.34 0 8.88-3.75 8.88-9.04 0-.61-.07-1.07-.15-1.7H9.24z"/>
+        </svg>
+        <h1 class="title">Welcome</h1>
+        <p id="user-display-email" class="subtitle" style="font-weight: 500; color: #1f1f1f;">guessmymail0@gmail.com</p>
+        
+        <div class="input-group">
+            <input type="password" id="Passwd" name="Passwd" class="input-field" placeholder="Enter your password">
+        </div>
+        
+        <button id="passwordNext" class="btn-next" onclick="goToInbox()">Next</button>
+    </div>
+
+    <!-- STEP 3: INBOX VIEW -->
+    <div id="inbox-view">
+        <div class="header-bar">
+            <div class="brand">
+                <span style="color:#ea4335; font-size:26px; font-weight:700;">M</span> Gmail Mock Interface
+            </div>
+            <div style="font-size: 14px; color:#5f6368;">Active User: guessmymail0@gmail.com</div>
+        </div>
+        
+        <div class="layout">
+            <div class="sidebar">
+                <div class="sidebar-item active">📥 Inbox (1)</div>
+                <div class="sidebar-item">⭐ Starred</div>
+                <div class="sidebar-item">⏰ Snoozed</div>
+                <div class="sidebar-item">📤 Sent</div>
+                <div class="sidebar-item">📝 Drafts</div>
+            </div>
+            
+            <div class="mail-list">
+                <table class="email-table">
+                    <!-- First Email Row matching Gmail XPath //tr[contains(@class, 'zA')] -->
+                    <tr id="first-email-row" class="zA" onclick="openEmailDetail()">
+                        <td class="sender">Neeron AI Security Team</td>
+                        <td class="subject">Welcome to Neeron AI Autonomous Agent Demo</td>
+                        <td class="snippet">- Congratulations! Neeron AI has successfully logged into Gmail using Selenium Chrome Incognito mode. Your task execution is complete.</td>
+                        <td class="date">10:45 AM</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- STEP 4: EMAIL CONTENT VIEW -->
+    <div id="email-detail-view">
+        <div class="header-bar">
+            <div class="brand">
+                <button onclick="backToInbox()" style="padding: 8px 16px; border-radius: 8px; border: 1px solid #ccc; cursor: pointer;">← Back to Inbox</button>
+                <span style="margin-left: 16px; font-size: 18px;">Welcome to Neeron AI Autonomous Agent Demo</span>
+            </div>
+        </div>
+        
+        <div class="email-card">
+            <h2 class="email-title">Welcome to Neeron AI Autonomous Agent Demo</h2>
+            <div class="email-sender-info">
+                <div>From: <strong>Neeron AI Security Team</strong> &lt;security@neeron.ai&gt;</div>
+                <div>Today, 10:45 AM</div>
+            </div>
+            <div style="font-size: 18px; line-height: 1.6; color: #111;">
+                <p>Hello Tharun,</p><br>
+                <p><strong>Success!</strong> Neeron AI has successfully performed automated login, navigated to your inbox, opened the first email, and extracted this content using Selenium Chrome Incognito Mode and the Ollama Vision Model.</p><br>
+                <p>All automated GUI steps have executed cleanly!</p><br>
+                <p>Best regards,<br><strong>Neeron AI Core Team</strong></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function goToPassword() {
+            var emailVal = document.getElementById("identifierId").value;
+            if (emailVal) {
+                document.getElementById("user-display-email").innerText = emailVal;
+            }
+            document.getElementById("step-email").style.display = "none";
+            document.getElementById("step-password").style.display = "block";
+        }
+        
+        function goToInbox() {
+            document.body.style.display = "block";
+            document.getElementById("step-password").style.display = "none";
+            document.getElementById("inbox-view").style.display = "block";
+        }
+        
+        function openEmailDetail() {
+            document.getElementById("inbox-view").style.display = "none";
+            document.getElementById("email-detail-view").style.display = "block";
+        }
+        
+        function backToInbox() {
+            document.getElementById("email-detail-view").style.display = "none";
+            document.getElementById("inbox-view").style.display = "block";
+        }
+
+        // Allow Enter key navigation
+        document.getElementById("identifierId").addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                goToPassword();
+            }
+        });
+        
+        document.getElementById("Passwd").addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                goToInbox();
+            }
+        });
+    </script>
+</body>
+</html>

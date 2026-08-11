@@ -11,3 +11,8 @@ mss
 opencv-python
 selenium
 webdriver-manager
+uiautomation
+edge-tts
+chromadb
+pvporcupine
+pywin32

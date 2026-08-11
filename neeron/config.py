@@ -25,11 +25,11 @@ logger = setup_logging()
 
 @dataclass
 class NeeronConfig:
-    wake_word: str = "hi"           # Wake word
+    wake_word: str = "hello"           # Wake word
     model: str = "gemma4:e4b-it-qat"   # Vision + Text model
     ollama_url: str = "http://localhost:11434"
     audio_energy_threshold: int = 50
-    audio_timeout: int = 20
+    audio_timeout: int = 10
     max_history: int = 50
     max_agent_steps: int = 10          # Max GUI steps
     log_level: str = "INFO"

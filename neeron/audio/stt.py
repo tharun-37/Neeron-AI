@@ -168,6 +168,10 @@ class STTEngine:
                 print(f"\nTranscribed: '{text}'")
                 logger.info(f"Transcribed text: {text}")
                 
+                if "stop" in text:
+                    print("User spoken STOP command detected!")
+                    return "stop"
+                
                 if self.config.wake_word in text:
                     command = text.replace(self.config.wake_word, "").strip()
                     if command:
