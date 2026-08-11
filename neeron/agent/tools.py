@@ -129,6 +129,60 @@ class AgentToolRegistry:
             {
                 "type": "function",
                 "function": {
+                    "name": "read_file",
+                    "description": "Read file text content from local disk safely.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "filepath": {"type": "string", "description": "Absolute or relative file path to read"}
+                        },
+                        "required": ["filepath"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "write_file",
+                    "description": "Create, write, or append text content to a local file on disk.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "filepath": {"type": "string", "description": "File path on disk"},
+                            "content": {"type": "string", "description": "Text content to write"},
+                            "append": {"type": "boolean", "description": "Whether to append instead of overwrite", "default": False}
+                        },
+                        "required": ["filepath", "content"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "inspect_system_services",
+                    "description": "Query running administrative Windows Services and system status.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {}
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "manage_virtual_desktops",
+                    "description": "Manage Windows Virtual Desktops (action: 'list', 'create', 'next', 'prev').",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "action": {"type": "string", "description": "Virtual desktop action: 'list', 'create', 'next', 'prev'", "default": "list"}
+                        }
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
                     "name": "inspect_uia_tree",
                     "description": "Parse the native Windows UI Automation (UIA) accessibility control tree of the active window to get exact button names, text fields, control types, AutomationIds, and bounding rectangles.",
                     "parameters": {
@@ -452,6 +506,23 @@ class AgentToolRegistry:
                 app_name = args.get("app_name", "")
                 success, msg = self.app_manager.close_app(app_name)
                 return msg
+            
+            elif name == "read_file":
+                filepath = args.get("filepath", "")
+                return self.system_controller.read_file(filepath)
+            
+            elif name == "write_file":
+                filepath = args.get("filepath", "")
+                content = args.get("content", "")
+                append = bool(args.get("append", False))
+                return self.system_controller.write_file(filepath, content, append=append)
+            
+            elif name == "inspect_system_services":
+                return self.system_controller.inspect_system_services()
+            
+            elif name == "manage_virtual_desktops":
+                action = args.get("action", "list")
+                return self.system_controller.manage_virtual_desktops(action)
             
             elif name == "execute_shell":
                 cmd = args.get("command", "")

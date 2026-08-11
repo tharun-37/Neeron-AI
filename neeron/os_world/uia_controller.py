@@ -1,11 +1,12 @@
 import logging
 import time
+import difflib
 from typing import List, Dict, Any, Optional
 
 logger = logging.getLogger("NeeronAi")
 
 class UIAController:
-    """Native Windows UI Automation (UIA) controller reading element trees, text values, and executing direct UIA clicks."""
+    """Native Windows UI Automation (UIA) controller with Fuzzy String Matching and Element Invocation."""
     def __init__(self):
         self._uia = None
         self._init_uia()
@@ -82,7 +83,6 @@ class UIAController:
                 if depth > 6:
                     return
                 try:
-                    # Check ValuePattern or TextPattern
                     val = None
                     try:
                         val = control.GetValuePattern().Value
@@ -111,7 +111,7 @@ class UIAController:
             return f"Error reading window text: {e}"
     
     def click_uia_element(self, query: str) -> str:
-        """Locates a control by Name or AutomationId in the active window and executes a native UIA click."""
+        """Locates a control by Name or AutomationId in active window with Fuzzy String Matching fallback."""
         if not self._uia:
             return "Windows UI Automation engine not available."
         
@@ -122,7 +122,7 @@ class UIAController:
             
             top_win = focus_win.GetTopLevelControl()
             
-            # Search for control by Name or AutomationId
+            # 1. Try Exact or Substring match
             ctrl = top_win.Control(searchDepth=6, SubName=query)
             if not ctrl.Exists(maxSearchSeconds=1):
                 ctrl = top_win.Control(searchDepth=6, AutomationId=query)
@@ -136,6 +136,38 @@ class UIAController:
                     ctrl.Click()
                     time.sleep(0.5)
                     return f"Clicked UIA control '{ctrl.Name}' (ID: '{ctrl.AutomationId}')"
+            
+            # 2. Fallback: Fuzzy String Matching using difflib across all window controls
+            all_controls = []
+            def gather_controls(control, depth=0):
+                if depth > 5:
+                    return
+                try:
+                    if control.Name and control.Name.strip():
+                        all_controls.append((control.Name.strip(), control))
+                    if control.AutomationId and control.AutomationId.strip():
+                        all_controls.append((control.AutomationId.strip(), control))
+                    for child in control.GetChildren():
+                        gather_controls(child, depth + 1)
+                except Exception:
+                    pass
+            
+            gather_controls(top_win)
+            
+            if all_controls:
+                name_map = {name: c for name, c in all_controls}
+                matches = difflib.get_close_matches(query, name_map.keys(), n=1, cutoff=0.5)
+                if matches:
+                    best_match = matches[0]
+                    matched_ctrl = name_map[best_match]
+                    try:
+                        matched_ctrl.GetInvokePattern().Invoke()
+                        time.sleep(0.5)
+                        return f"Fuzzy matched and invoked UIA control '{matched_ctrl.Name}' (query: '{query}', best match: '{best_match}')"
+                    except Exception:
+                        matched_ctrl.Click()
+                        time.sleep(0.5)
+                        return f"Fuzzy matched and clicked UIA control '{matched_ctrl.Name}' (query: '{query}', best match: '{best_match}')"
             
             return f"UIA control matching '{query}' not found in active window"
         except Exception as e:

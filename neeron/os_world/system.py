@@ -458,6 +458,63 @@ class SystemController:
             logger.error(f"Task Manager analysis error: {e}")
             return f"Opened Task Manager (taskmgr). System process analysis error: {e}"
     
+    def read_file(self, filepath: str) -> str:
+        """Reads contents of a file from disk safely."""
+        try:
+            p = Path(filepath)
+            if not p.exists():
+                return f"File '{filepath}' does not exist."
+            if p.stat().st_size > 2 * 1024 * 1024:
+                return f"File '{filepath}' is too large to read into memory directly."
+            with open(p, "r", encoding="utf-8", errors="ignore") as f:
+                content = f.read()
+            return f"File Content of '{filepath}':\n{content[:2000]}"
+        except Exception as e:
+            return f"Error reading file '{filepath}': {e}"
+    
+    def write_file(self, filepath: str, content: str, append: bool = False) -> str:
+        """Creates, writes, or appends text to a file on disk."""
+        try:
+            p = Path(filepath)
+            p.parent.mkdir(parents=True, exist_ok=True)
+            mode = "a" if append else "w"
+            with open(p, mode, encoding="utf-8") as f:
+                f.write(content)
+            action = "Appended to" if append else "Wrote"
+            return f"Successfully {action.lower()} file '{filepath}' ({len(content)} characters)."
+        except Exception as e:
+            return f"Error writing file '{filepath}': {e}"
+    
+    def inspect_system_services(self) -> str:
+        """Queries administrative Windows Services status (Running/Stopped)."""
+        try:
+            if sys.platform == "win32":
+                res = subprocess.run(["powershell", "-NoProfile", "-Command", "Get-Service | Where-Object {$_.Status -eq 'Running'} | Select-Object -First 15 Name, DisplayName, Status | Format-Table -AutoSize"], capture_output=True, text=True)
+                return f"Active Windows Services:\n{res.stdout.strip()}"
+            return "Windows Services inspection is Windows-only."
+        except Exception as e:
+            return f"Error inspecting Windows services: {e}"
+    
+    def manage_virtual_desktops(self, action: str = "list") -> str:
+        """Manages Windows Virtual Desktops (list, switch, create)."""
+        try:
+            if sys.platform == "win32":
+                if action.lower() == "create":
+                    pyautogui.hotkey('win', 'ctrl', 'd')
+                    return "Created new Windows Virtual Desktop (Win + Ctrl + D)"
+                elif action.lower() == "next":
+                    pyautogui.hotkey('win', 'ctrl', 'right')
+                    return "Switched to next Virtual Desktop (Win + Ctrl + Right)"
+                elif action.lower() == "prev":
+                    pyautogui.hotkey('win', 'ctrl', 'left')
+                    return "Switched to previous Virtual Desktop (Win + Ctrl + Left)"
+                else:
+                    pyautogui.hotkey('win', 'tab')
+                    return "Opened Windows Task View / Virtual Desktops overview (Win + Tab)"
+            return "Virtual Desktops management is Windows-only."
+        except Exception as e:
+            return f"Error managing Virtual Desktops: {e}"
+    
     def cleanup(self):
         if self.driver:
             try:
