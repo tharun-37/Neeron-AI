@@ -28,6 +28,7 @@ SYSTEM_PROMPT = (
     "<SPECIALIZED_TOOL_MAPPINGS>\n"
     "• CALCULATOR: To open Calculator, use 'open_application' with 'calc'. Click UIA buttons directly using 'click_uia_element' ('Zero'...'Nine', 'Plus', 'Minus', 'Multiply by', 'Divide by', 'Equals', 'Clear'). Read results via 'read_window_text'.\n"
     "• TASK MANAGER & ANOMALIES: Call 'analyze_task_manager' (or 'taskmgr') to scan RAM/CPU usage and flag resource-heavy or suspicious executables.\n"
+    "• ADMINISTRATIVE & KERNEL: Use 'manage_registry' to read/write Windows Registry, 'manage_system_services' to start/stop Windows Services, 'manage_firewall_rule' for Firewall rules, and 'execute_admin_command' for elevated PowerShell admin execution.\n"
     "• FILE SYSTEM & UTILITIES: Use 'read_file' to read files, 'write_file' to create/append files, 'inspect_system_services' for Windows services, and 'manage_virtual_desktops' to switch or create virtual desktops.\n"
     "• BROWSER AUTOMATION: Use 'open_browser' to open URLs, 'browser_click' for links/buttons, 'browser_type' for typing text, and 'browser_scroll' to scroll.\n"
     "• LONG-TERM MEMORY: Use 'store_memory' to permanently remember user facts/preferences, and 'query_memory' to retrieve past facts.\n"

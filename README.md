@@ -226,7 +226,11 @@ sequenceDiagram
 | **`analyze_task_manager`**| `SystemController` | None | Opens Task Manager (`taskmgr`), scans RAM/CPU, and flags anomalies. |
 | **`inspect_uia_tree`**| `UIAController` | None | Parses native Windows UIA accessibility tree of foreground window. |
 | **`read_window_text`** | `UIAController` | None | Reads document text and edit box values directly from active window. |
-| **`click_uia_element`**| `UIAController` | `query` (string) | Invokes/clicks GUI control natively by UIA Name or AutomationId. |
+| **`click_uia_element`**| `UIAController` | `query` (string) | Invokes/clicks GUI control natively by UIA Name, ID, or Fuzzy Match. |
+| **`read_file`** | `SystemController` | `filepath` (string) | Reads file text content from local disk safely. |
+| **`write_file`** | `SystemController` | `filepath` (str), `content` (str), `append` (bool) | Creates, writes, or appends text content to a local file on disk. |
+| **`inspect_system_services`**| `SystemController` | None | Queries running administrative Windows Services and system status. |
+| **`manage_virtual_desktops`**| `SystemController` | `action` ('list'/'create'/'next'/'prev') | Manages Windows Virtual Desktops (create, switch, list). |
 | **`open_browser`** | `SystemController` | `url` (string) | Opens webpage URL in Selenium Chrome standard driver. |
 | **`browser_click`** | `SystemController` | `query` (string) | Clicks element on active webpage by visible text, ID, or CSS. |
 | **`browser_type`** | `SystemController` | `query` (str), `text` (str) | Types text into webpage input field with human-like delays. |

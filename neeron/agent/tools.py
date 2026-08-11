@@ -118,6 +118,68 @@ class AgentToolRegistry:
             {
                 "type": "function",
                 "function": {
+                    "name": "manage_registry",
+                    "description": "Inspect, create, or update Windows Registry keys (HKLM, HKCU).",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "action": {"type": "string", "description": "Action: 'read' or 'write'"},
+                            "key_path": {"type": "string", "description": "Registry path (e.g. 'HKCU\\Software\\MyConfig')"},
+                            "value_name": {"type": "string", "description": "Name of registry value"},
+                            "value_data": {"type": "string", "description": "Data to write to registry value"}
+                        },
+                        "required": ["action", "key_path"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "manage_system_services",
+                    "description": "Start, stop, restart, or query Windows System Services (SCM).",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "service_name": {"type": "string", "description": "Name of Windows system service"},
+                            "action": {"type": "string", "description": "Action: 'status', 'start', 'stop', 'restart'", "default": "status"}
+                        },
+                        "required": ["service_name"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "manage_firewall_rule",
+                    "description": "Add, remove, or query Windows Firewall rules (netsh advfirewall).",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "rule_name": {"type": "string", "description": "Name of firewall rule"},
+                            "action": {"type": "string", "description": "Action: 'block', 'allow', 'delete', 'show'", "default": "block"},
+                            "program_path": {"type": "string", "description": "Executable program path to apply rule to"}
+                        },
+                        "required": ["rule_name"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "execute_admin_command",
+                    "description": "Execute a PowerShell command with elevated administrative privilege tokens.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "command": {"type": "string", "description": "PowerShell command to run as Administrator"}
+                        },
+                        "required": ["command"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
                     "name": "analyze_task_manager",
                     "description": "Open Windows Task Manager (taskmgr), scan all active processes for CPU & Memory/RAM usage, and analyze for resource-heavy apps or potential malware.",
                     "parameters": {
@@ -429,6 +491,28 @@ class AgentToolRegistry:
                 x = int(args.get("x", 0))
                 y = int(args.get("y", 0))
                 return self.kernel.inject_hardware_click(x, y)
+            
+            elif name == "manage_registry":
+                action = args.get("action", "read")
+                key_path = args.get("key_path", "")
+                val_name = args.get("value_name", None)
+                val_data = args.get("value_data", None)
+                return self.kernel.manage_registry(action, key_path, value_name=val_name, value_data=val_data)
+            
+            elif name == "manage_system_services":
+                service_name = args.get("service_name", "")
+                action = args.get("action", "status")
+                return self.kernel.manage_system_services(service_name, action=action)
+            
+            elif name == "manage_firewall_rule":
+                rule_name = args.get("rule_name", "")
+                action = args.get("action", "block")
+                prog_path = args.get("program_path", None)
+                return self.kernel.manage_firewall_rule(rule_name, action=action, program_path=prog_path)
+            
+            elif name == "execute_admin_command":
+                cmd = args.get("command", "")
+                return self.kernel.execute_admin_command(cmd)
             
             elif name == "inspect_uia_tree":
                 return self.uia.inspect_active_window_elements()
