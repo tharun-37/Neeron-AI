@@ -327,20 +327,6 @@ class AgentToolRegistry:
             {
                 "type": "function",
                 "function": {
-                    "name": "open_gmail_and_read_first_email",
-                    "description": "Open Chrome in Incognito mode, go to real Gmail (https://mail.google.com/), sign in with provided email and password, and open the first email in the inbox.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "email": {"type": "string", "description": "User email address"},
-                            "password": {"type": "string", "description": "User password"}
-                        }
-                    }
-                }
-            },
-            {
-                "type": "function",
-                "function": {
                     "name": "open_browser",
                     "description": "Open a website URL in Selenium Chrome Incognito browser.",
                     "parameters": {
@@ -612,12 +598,6 @@ class AgentToolRegistry:
             elif name == "click_uia_element":
                 query = args.get("query", "")
                 return self.uia.click_uia_element(query)
-            
-            elif name == "open_gmail_and_read_first_email":
-                email = args.get("email", "guessmymail0@gmail.com")
-                password = args.get("password", "blahblahblahzero")
-                use_real = bool(args.get("use_real_gmail", False))
-                return self.system_controller.open_gmail_and_read_first_email(email=email, password=password, use_real_gmail=use_real)
             
             elif name == "open_browser":
                 url = args.get("url", "")
