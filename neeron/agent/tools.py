@@ -191,6 +191,52 @@ class AgentToolRegistry:
             {
                 "type": "function",
                 "function": {
+                    "name": "inspect_kernel_drivers",
+                    "description": "Inspect active Windows Filter Drivers and kernel driver modules via fltmc and driverquery.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {}
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "audit_security_events",
+                    "description": "Audit recent Windows Security Event Logs (failed logons, privilege escalation, process creation).",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "max_events": {"type": "integer", "description": "Maximum event log entries to fetch", "default": 10}
+                        }
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "audit_network_sockets",
+                    "description": "Audit listening network ports, active TCP/UDP sockets, and bound process IDs.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {}
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "audit_scheduled_persistence",
+                    "description": "Audit active scheduled tasks and startup persistence hooks for malware/anomaly detection.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {}
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
                     "name": "read_file",
                     "description": "Read file text content from local disk safely.",
                     "parameters": {
@@ -628,6 +674,19 @@ class AgentToolRegistry:
             
             elif name == "analyze_task_manager":
                 return self.system_controller.analyze_task_manager()
+            
+            elif name == "inspect_kernel_drivers":
+                return self.kernel_service.inspect_kernel_drivers()
+            
+            elif name == "audit_security_events":
+                max_events = int(args.get("max_events", 10))
+                return self.kernel_service.audit_security_events(max_events)
+            
+            elif name == "audit_network_sockets":
+                return self.kernel_service.audit_network_sockets()
+            
+            elif name == "audit_scheduled_persistence":
+                return self.kernel_service.audit_scheduled_persistence()
             
             elif name == "close_application":
                 app_name = args.get("app_name", "")

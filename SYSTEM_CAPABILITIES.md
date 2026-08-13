@@ -29,13 +29,18 @@ Neeron AI is a vision-enabled autonomous personal operating assistant running na
 
 ---
 
-## 3. Future Kernel & Security Expansion Pipeline
+## 3. Implemented Kernel & Administrative Auditing Subsystems
 
-1. **Kernel Driver & Filter Module Audit**:
-   - Query loaded kernel drivers via `driverquery` and `fltmc` filter driver inspection.
-2. **Windows Security Event Log Auditor**:
-   - Parse Security and System channels (`Get-WinEvent`) to detect unauthorized login attempts or process injection.
-3. **Network Active Socket & Port Auditor**:
-   - Inspect active TCP/UDP listeners and map process IDs using `Get-NetTCPConnection` / `netstat -ano`.
-4. **Task Scheduler & Persistence Monitor**:
-   - Audit WMI jobs and scheduled tasks (`schtasks`) to enforce system persistence hygiene.
+1. **Kernel Driver & Filter Module Inspector (`inspect_kernel_drivers`)**:
+   - Queries loaded Windows Filter Drivers (`fltmc filters`) and kernel driver modules (`driverquery /FO CSV`).
+   - Used by Neeron AI to detect non-standard or third-party kernel driver hooks.
+
+2. **Windows Security Event Log Auditor (`audit_security_events`)**:
+   - Audits real-time Security Event Logs (`Get-WinEvent -LogName Security`).
+   - Inspects failed logon attempts (Event ID 4625), privilege escalation (Event ID 4672), and new process creation (Event ID 4688).
+
+3. **Active Network Socket & Port Auditor (`audit_network_sockets`)**:
+   - Audits open listening network ports, TCP/UDP sockets, and bound process IDs using `Get-NetTCPConnection`.
+
+4. **Task Scheduler & Persistence Monitor (`audit_scheduled_persistence`)**:
+   - Scans active Windows Scheduled Tasks (`Get-ScheduledTask`) and startup persistence keys to enforce system hygiene and detect unauthorized startup entries.

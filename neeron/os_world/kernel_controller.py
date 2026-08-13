@@ -129,3 +129,47 @@ class KernelServiceController:
             return f"Executed Elevated Admin Command: '{command}'. Exit Code: {res.returncode}"
         except Exception as e:
             return f"Admin command execution error: {e}"
+
+    def inspect_kernel_drivers(self) -> str:
+        """Inspects active Windows Filter Drivers and kernel driver modules via fltmc and driverquery."""
+        if not self.is_win32:
+            return "Kernel driver inspection is Windows-only."
+        try:
+            res1 = subprocess.run(["powershell", "-NoProfile", "-Command", "fltmc filters"], capture_output=True, text=True)
+            res2 = subprocess.run(["powershell", "-NoProfile", "-Command", "driverquery /FO CSV | Select-Object -First 10"], capture_output=True, text=True)
+            return f"Active Windows Filter Drivers:\n{res1.stdout.strip()}\n\nKernel Driver Modules (First 10):\n{res2.stdout.strip()}"
+        except Exception as e:
+            return f"Kernel driver inspection error: {e}"
+
+    def audit_security_events(self, max_events: int = 10) -> str:
+        """Audits recent Windows Security Event Logs (Failed Logons 4625, Privilege Use 4672, Process Creation 4688)."""
+        if not self.is_win32:
+            return "Security log auditing is Windows-only."
+        try:
+            ps_script = f"Get-WinEvent -LogName Security -MaxEvents {max_events} | Select-Object TimeCreated, Id, ProviderName, Message | Format-List"
+            res = subprocess.run(["powershell", "-NoProfile", "-Command", ps_script], capture_output=True, text=True)
+            return f"Windows Security Event Audit (Last {max_events} Events):\n{res.stdout.strip() or 'No events found or privilege restricted.'}"
+        except Exception as e:
+            return f"Security audit error: {e}"
+
+    def audit_network_sockets(self) -> str:
+        """Audits open network ports, active TCP/UDP sockets, and bound processes using Get-NetTCPConnection."""
+        if not self.is_win32:
+            return "Network socket auditing is Windows-only."
+        try:
+            ps_script = "Get-NetTCPConnection -State Listen | Select-Object LocalAddress, LocalPort, OwningProcess | Format-Table -AutoSize"
+            res = subprocess.run(["powershell", "-NoProfile", "-Command", ps_script], capture_output=True, text=True)
+            return f"Active Listening Network Sockets:\n{res.stdout.strip()}"
+        except Exception as e:
+            return f"Network socket audit error: {e}"
+
+    def audit_scheduled_persistence(self) -> str:
+        """Audits scheduled tasks and startup persistence hooks for malware/anomaly detection."""
+        if not self.is_win32:
+            return "Persistence auditing is Windows-only."
+        try:
+            ps_script = "Get-ScheduledTask | Where-Object {$_.State -ne 'Disabled'} | Select-Object -First 15 TaskName, TaskPath, State | Format-Table -AutoSize"
+            res = subprocess.run(["powershell", "-NoProfile", "-Command", ps_script], capture_output=True, text=True)
+            return f"Active Scheduled Tasks Persistence Hooks:\n{res.stdout.strip()}"
+        except Exception as e:
+            return f"Persistence audit error: {e}"
