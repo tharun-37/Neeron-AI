@@ -77,15 +77,15 @@ graph TD
     A[Microphone Audio Stream 16kHz PCM] --> B[PyAudio RMS Energy Visualizer]
     B --> C[Faster-Whisper CPU STT]
     C --> D{Spoken Stop Check}
-    D -- "stop" / "cancel" --> E[Cancel Task & Resume STT]
-    D -- User Command --> F[NeeronDaemon Orchestrator]
+    D -->|Stop or Cancel| E[Cancel Task & Resume STT]
+    D -->|User Command| F[NeeronDaemon Orchestrator]
     F --> G[OllamaAgent Gemma4 Vision GPU]
     G <--> H[(ChromaDB Vector Memory)]
     G --> I{Tool Dispatch Router}
-    I -- UIA Tool --> J[UIAController Windows Accessibility Tree]
-    I -- Browser Tool --> K[Selenium Chrome Standard Driver]
-    I -- System Tool --> L[SystemController PowerShell / TaskMgr]
-    I -- Kernel Tool --> M[KernelServiceController Win32 SendInput]
+    I -->|UIA Tool| J[UIAController Windows Accessibility Tree]
+    I -->|Browser Tool| K[Selenium Chrome Standard Driver]
+    I -->|System Tool| L[SystemController PowerShell / TaskMgr]
+    I -->|Kernel Tool| M[KernelServiceController Win32 SendInput]
     J & K & L & M --> N[ScreenPerception Active Window Crop]
     N --> G
     G --> O[EdgeTTS Neural Speech Output]
