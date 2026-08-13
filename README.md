@@ -3,7 +3,6 @@
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![Ollama Vision](https://img.shields.io/badge/Ollama-Gemma4_Vision-000000?style=for-the-badge&logo=ollama&logoColor=white)](https://ollama.com/)
 [![Windows UIA](https://img.shields.io/badge/OS-Windows_10%2F11_UIA-0078D6?style=for-the-badge&logo=windows&logoColor=white)](https://microsoft.com)
-[![PyQt6 Dynamic Island](https://img.shields.io/badge/GUI-Dynamic_Island_HUD-00F0FF?style=for-the-badge&logo=qt&logoColor=white)](https://pypi.org/project/PyQt6/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 
 Neeron AI is a **100% private, local, voice-activated multimodal desktop agent** engineered for Windows. It provides full system-wide access to control the Windows OS desktop environment using native UI Automation (UIA), Selenium browser control, Task Manager process analytics, Win32 kernel event monitoring, Window Layout Snap tiling (`SetWindowPos`), Windows Registry theme controls, persistent vector memory, neural speech synthesis, and an **iOS 27 Dynamic Island Glass Capsule HUD**—all optimized to operate within a strict **8GB GPU VRAM hardware budget**.
