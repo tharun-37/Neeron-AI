@@ -164,6 +164,9 @@ class STTEngine:
             except Exception:
                 pass
             
+            last_partial_time = 0
+            live_text = ""
+            
             with AudioStream(self.pa, {**self.audio_config, 'input': True}) as stream:
                 while time.time() - start_time < self.config.audio_timeout:
                     try:
@@ -181,6 +184,8 @@ class STTEngine:
                             f"  Status:   {status} [wake word: '{self.config.wake_word}']",
                             f"  Audio:    {waveform}"
                         ]
+                        if live_text:
+                            dashboard_lines.append(f"  Live STT: '{live_text}'")
                         self.ansi_renderer.render(dashboard_lines)
                         
                         if energy > self.config.audio_energy_threshold:
@@ -189,7 +194,7 @@ class STTEngine:
                                 silence_chunks = 0
                                 try:
                                     from neeron.ui.hud_widget import notify_hud
-                                    notify_hud("Recording speech...", "recording")
+                                    notify_hud("Listening...", "recording")
                                 except Exception:
                                     pass
                             frames.append(data)
@@ -198,6 +203,30 @@ class STTEngine:
                             frames.append(data)
                             if silence_chunks >= max_silence:
                                 break
+                        
+                        # Periodic live partial transcription while user is speaking
+                        if is_recording and len(frames) >= 4 and (time.time() - last_partial_time > 0.35):
+                            last_partial_time = time.time()
+                            try:
+                                partial_audio = np.frombuffer(b''.join(frames), dtype=np.int16).astype(np.float32) / 32768.0
+                                if len(partial_audio) >= 4000: # at least ~250ms audio
+                                    segments, _ = self.stt_model.transcribe(
+                                        partial_audio,
+                                        beam_size=1,
+                                        language="en",
+                                        without_timestamps=True
+                                    )
+                                    p_text = " ".join([s.text for s in segments]).strip().lower()
+                                    p_text = p_text.lstrip(",.?!;:_-'\" ").strip()
+                                    if p_text and p_text != live_text:
+                                        live_text = p_text
+                                        try:
+                                            from neeron.ui.hud_widget import notify_hud
+                                            notify_hud(live_text, "recording")
+                                        except Exception:
+                                            pass
+                            except Exception as partial_err:
+                                logger.debug(f"Live partial STT error: {partial_err}")
                     except Exception as e:
                         logger.error(f"Audio read error: {e}")
                         break

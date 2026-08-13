@@ -387,13 +387,23 @@ class DynamicIslandHUD(QWidget if PYQT_AVAILABLE else object):
                 self.confirm_btn.hide()
                 self.cancel_btn.hide()
                 
-                self.set_compact()
+                if raw_text and raw_text not in ("Recording...", "Listening...", "Recording speech..."):
+                    display_text = raw_text
+                    if len(display_text) > 18:
+                        target_w = min(360, 200 + (len(display_text) - 18) * 6)
+                        self.animate_geometry(target_w, self.COMPACT_H, radius=18)
+                    else:
+                        self.set_compact()
+                    self.status_label.setText(display_text[:50])
+                else:
+                    self.set_compact()
+                    self.status_label.setText("Listening...")
+                
                 if not self.start_time:
                     self.start_time = time.time()
                     self.timer.start(1000)
                 self.title_label.setText("NEERON")
                 self.title_label.setStyleSheet("color: rgba(255, 255, 255, 0.65); font-weight: bold; font-size: 9px; letter-spacing: 1px; border: none; background: transparent;")
-                self.status_label.setText("Recording...")
                 self.status_label.setStyleSheet("color: #FFFFFF; font-weight: 500; font-size: 11px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; border: none; background: transparent;")
                 
             elif state_type == "executing":
