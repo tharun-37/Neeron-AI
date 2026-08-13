@@ -125,7 +125,32 @@ class DesktopAppManager:
         info = self.find_app(app_name)
         
         if sys.platform == "win32":
-            if app_name.lower() in ["calc", "calculator"]:
+            app_lower = app_name.lower().strip()
+            
+            # Direct Windows Settings URI launch (bypasses Windows Search app recommendations)
+            if app_lower in ["settings", "setting", "windows settings", "win settings", "system settings", "ms-settings"]:
+                try:
+                    subprocess.Popen("start ms-settings:", shell=True)
+                    return True, "Launched official Windows Settings app via 'ms-settings:' URI"
+                except Exception as e:
+                    return False, f"Failed to launch ms-settings: {e}"
+            elif "display setting" in app_lower:
+                subprocess.Popen("start ms-settings:display", shell=True)
+                return True, "Launched Windows Display Settings via 'ms-settings:display'"
+            elif "sound setting" in app_lower or "volume setting" in app_lower:
+                subprocess.Popen("start ms-settings:sound", shell=True)
+                return True, "Launched Windows Sound Settings via 'ms-settings:sound'"
+            elif "network setting" in app_lower or "wifi setting" in app_lower:
+                subprocess.Popen("start ms-settings:network", shell=True)
+                return True, "Launched Windows Network Settings via 'ms-settings:network'"
+            elif "bluetooth setting" in app_lower:
+                subprocess.Popen("start ms-settings:bluetooth", shell=True)
+                return True, "Launched Windows Bluetooth Settings via 'ms-settings:bluetooth'"
+            elif "update setting" in app_lower or "windows update" in app_lower:
+                subprocess.Popen("start ms-settings:windowsupdate", shell=True)
+                return True, "Launched Windows Update Settings via 'ms-settings:windowsupdate'"
+            
+            if app_lower in ["calc", "calculator"]:
                 try:
                     subprocess.Popen("calc", shell=True)
                     return True, "Launched Windows Calculator via 'calc' shell command"
@@ -181,20 +206,66 @@ class DesktopAppManager:
         return False, f"Application '{app_name}' not found on system."
     
     def close_app(self, app_name: str) -> Tuple[bool, str]:
-        """Terminates process by name on Windows / Linux."""
-        info = self.find_app(app_name)
-        target = info["ExecName"] if info and info.get("ExecName") else app_name
+        """Terminates process by name across Windows and Linux with alias mapping and psutil fallback."""
+        app_clean = app_name.lower().strip().replace(".exe", "")
+        
+        # Windows process name alias map
+        alias_map = {
+            "calculator": ["CalculatorApp.exe", "calc.exe", "Calculator.exe"],
+            "calc": ["CalculatorApp.exe", "calc.exe", "Calculator.exe"],
+            "settings": ["SystemSettings.exe"],
+            "setting": ["SystemSettings.exe"],
+            "windows settings": ["SystemSettings.exe"],
+            "chrome": ["chrome.exe"],
+            "google chrome": ["chrome.exe"],
+            "edge": ["msedge.exe"],
+            "msedge": ["msedge.exe"],
+            "notepad": ["notepad.exe", "Notepad.exe"],
+            "cmd": ["cmd.exe"],
+            "powershell": ["powershell.exe"],
+            "terminal": ["WindowsTerminal.exe"],
+            "spotify": ["Spotify.exe"],
+            "code": ["Code.exe"],
+            "vscode": ["Code.exe"],
+            "discord": ["Discord.exe"],
+            "word": ["WINWORD.EXE"],
+            "excel": ["EXCEL.EXE"],
+            "powerpoint": ["POWERPNT.EXE"]
+        }
+        
+        targets = alias_map.get(app_clean, [f"{app_clean}.exe", app_clean])
         
         try:
             if sys.platform == "win32":
-                res = subprocess.run(["taskkill", "/F", "/IM", f"{target}.exe"], capture_output=True, text=True)
-                if res.returncode == 0:
-                    return True, f"Terminated Windows process '{target}.exe'"
-                return False, f"No process found for '{target}'"
+                for target in targets:
+                    img_name = target if target.endswith(".exe") else f"{target}.exe"
+                    res = subprocess.run(["taskkill", "/F", "/IM", img_name], capture_output=True, text=True)
+                    if res.returncode == 0:
+                        return True, f"Terminated Windows process '{img_name}'"
+                
+                # psutil process scan fallback
+                try:
+                    import psutil
+                    closed_count = 0
+                    for proc in psutil.process_iter(['pid', 'name']):
+                        try:
+                            p_name = proc.info['name'].lower()
+                            if app_clean in p_name:
+                                proc.kill()
+                                closed_count += 1
+                        except (psutil.NoSuchProcess, psutil.AccessDenied):
+                            pass
+                    if closed_count > 0:
+                        return True, f"Closed {closed_count} process(es) matching '{app_clean}'"
+                except Exception:
+                    pass
+                
+                return False, f"No active process found for '{app_name}'"
             else:
-                res = subprocess.run(["pkill", "-f", target], capture_output=True, text=True)
-                if res.returncode == 0:
-                    return True, f"Terminated process '{target}'"
-                return False, f"No process found for '{target}'"
+                for target in targets:
+                    res = subprocess.run(["pkill", "-f", target], capture_output=True, text=True)
+                    if res.returncode == 0:
+                        return True, f"Terminated process '{target}'"
+                return False, f"No active process found for '{app_name}'"
         except Exception as e:
             return False, f"Failed to close application '{app_name}': {e}"

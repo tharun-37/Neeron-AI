@@ -99,26 +99,28 @@ class SystemController:
             options = webdriver.ChromeOptions()
             options.add_argument("--start-maximized")
             options.add_argument("--disable-blink-features=AutomationControlled")
+            options.add_argument("--remote-debugging-port=9222") # Chrome DevTools Protocol (CDP) Remote Debugging Port
+            options.add_argument("--remote-allow-origins=*")
             options.add_experimental_option("excludeSwitches", ["enable-automation"])
             options.add_experimental_option('useAutomationExtension', False)
             
-            logger.info("Initializing Selenium Chrome Driver (Standard Legitimate Mode)...")
+            logger.info("Initializing Selenium Chrome Driver with Chrome DevTools Protocol (CDP port 9222)...")
             service = ChromeService(ChromeDriverManager().install())
             self.driver = webdriver.Chrome(service=service, options=options)
             
-            # Execute CDP script to override navigator.webdriver flag
+            # Execute CDP script to override navigator.webdriver & bot flags (ChromeDevTools MCP protocol)
             try:
                 self.driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {
                     'source': '''
-                        Object.defineProperty(navigator, 'webdriver', {
-                            get: () => undefined
-                        })
+                        Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+                        Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
+                        Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
                     '''
                 })
-            except Exception:
-                pass
+            except Exception as cdp_err:
+                logger.debug(f"CDP init script error: {cdp_err}")
             
-            logger.info("Selenium Chrome Driver initialized successfully (Standard Legitimate Mode)")
+            logger.info("Selenium Chrome Driver initialized successfully with CDP Remote Debugging")
             return self.driver
         except Exception as e:
             logger.warning(f"Chrome Selenium driver failed: {e}. Trying Firefox fallback...")
@@ -181,6 +183,41 @@ class SystemController:
         except Exception as e:
             logger.error(f"Failed to open browser: {e}")
             return f"Error opening URL {url}: {e}"
+    
+    def execute_cdp_command(self, cmd: str, params: Optional[dict] = None) -> str:
+        """Executes raw Chrome DevTools Protocol (CDP) commands directly on Selenium Chrome (CDP port 9222)."""
+        driver = self.get_browser_driver()
+        if not driver or not hasattr(driver, "execute_cdp_cmd"):
+            return "Chrome DevTools Protocol (CDP) driver not active."
+        try:
+            res = driver.execute_cdp_cmd(cmd, params or {})
+            return f"CDP Command '{cmd}' executed successfully: {res}"
+        except Exception as e:
+            return f"CDP Command execution error: {e}"
+    
+    def cdp_evaluate_js(self, script: str) -> str:
+        """Evaluates arbitrary JavaScript in active Chrome tab using CDP Runtime.evaluate."""
+        driver = self.get_browser_driver()
+        if not driver:
+            return "Chrome browser driver not running."
+        try:
+            res = driver.execute_cdp_cmd("Runtime.evaluate", {"expression": script, "returnByValue": True})
+            val = res.get("result", {}).get("value", res)
+            return f"CDP JS Execution Result: {val}"
+        except Exception as e:
+            return f"CDP JS execution error: {e}"
+
+    def cdp_get_console_logs(self) -> str:
+        """Fetches browser console logs via Chrome DevTools Protocol."""
+        driver = self.get_browser_driver()
+        if not driver:
+            return "Chrome browser driver not running."
+        try:
+            logs = driver.get_log("browser")
+            log_msgs = [f"[{l.get('level', 'INFO')}] {l.get('message', '')}" for l in logs[:15]]
+            return "Chrome Console Logs:\n" + "\n".join(log_msgs) if log_msgs else "No recent browser console logs."
+        except Exception as e:
+            return f"Error fetching console logs: {e}"
     
     def browser_click(self, query: str) -> str:
         """Clicks an element on the webpage, waits up to 5s for redirection, and pauses 1s for page render."""

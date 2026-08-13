@@ -155,7 +155,7 @@ class STTEngine:
             frames = []
             is_recording = False
             silence_chunks = 0
-            max_silence = int(0.4 * self.audio_config['rate'] / self.audio_config['frames_per_buffer'])
+            max_silence = int(0.5 * self.audio_config['rate'] / self.audio_config['frames_per_buffer'])
             start_time = time.time()
             
             try:
@@ -163,9 +163,6 @@ class STTEngine:
                 notify_hud(f"Listening for '{self.config.wake_word}'...", "info")
             except Exception:
                 pass
-            
-            last_partial_time = 0
-            live_text = ""
             
             with AudioStream(self.pa, {**self.audio_config, 'input': True}) as stream:
                 while time.time() - start_time < self.config.audio_timeout:
@@ -178,23 +175,22 @@ class STTEngine:
                         
                         status = "LISTENING" if not is_recording else "RECORDING"
                         
-                        # Live multi-line ANSI terminal dashboard update
+                        # Fast multi-line ANSI terminal dashboard update
                         dashboard_lines = [
                             f"[ NEERON AI LIVE TERMINAL ]",
                             f"  Status:   {status} [wake word: '{self.config.wake_word}']",
                             f"  Audio:    {waveform}"
                         ]
-                        if live_text:
-                            dashboard_lines.append(f"  Live STT: '{live_text}'")
                         self.ansi_renderer.render(dashboard_lines)
                         
-                        if energy > self.config.audio_energy_threshold:
+                        threshold = getattr(self.config, 'audio_energy_threshold', 25)
+                        if energy > threshold:
                             if not is_recording:
                                 is_recording = True
                                 silence_chunks = 0
                                 try:
                                     from neeron.ui.hud_widget import notify_hud
-                                    notify_hud("Listening...", "recording")
+                                    notify_hud("Recording speech...", "recording")
                                 except Exception:
                                     pass
                             frames.append(data)
@@ -203,30 +199,6 @@ class STTEngine:
                             frames.append(data)
                             if silence_chunks >= max_silence:
                                 break
-                        
-                        # Periodic live partial transcription while user is speaking
-                        if is_recording and len(frames) >= 4 and (time.time() - last_partial_time > 0.35):
-                            last_partial_time = time.time()
-                            try:
-                                partial_audio = np.frombuffer(b''.join(frames), dtype=np.int16).astype(np.float32) / 32768.0
-                                if len(partial_audio) >= 4000: # at least ~250ms audio
-                                    segments, _ = self.stt_model.transcribe(
-                                        partial_audio,
-                                        beam_size=1,
-                                        language="en",
-                                        without_timestamps=True
-                                    )
-                                    p_text = " ".join([s.text for s in segments]).strip().lower()
-                                    p_text = p_text.lstrip(",.?!;:_-'\" ").strip()
-                                    if p_text and p_text != live_text:
-                                        live_text = p_text
-                                        try:
-                                            from neeron.ui.hud_widget import notify_hud
-                                            notify_hud(live_text, "recording")
-                                        except Exception:
-                                            pass
-                            except Exception as partial_err:
-                                logger.debug(f"Live partial STT error: {partial_err}")
                     except Exception as e:
                         logger.error(f"Audio read error: {e}")
                         break

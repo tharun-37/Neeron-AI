@@ -173,3 +173,26 @@ class KernelServiceController:
             return f"Active Scheduled Tasks Persistence Hooks:\n{res.stdout.strip()}"
         except Exception as e:
             return f"Persistence audit error: {e}"
+
+    def audit_kernel_processes(self) -> str:
+        """Audits active system processes via Win32 Kernel CIM provider (Win32_Process) and returns a high-level summary."""
+        if not self.is_win32:
+            return "Kernel process auditing is Windows-only."
+        try:
+            ps_script = (
+                "Get-CimInstance Win32_Process | "
+                "Select-Object ProcessId, Name, @{N='RAM_MB';E={[math]::Round($_.WorkingSetSize/1MB, 1)}}, ExecutablePath | "
+                "Sort-Object RAM_MB -Descending | Select-Object -First 10 | Format-Table -AutoSize"
+            )
+            res = subprocess.run(["powershell", "-NoProfile", "-Command", ps_script], capture_output=True, text=True)
+            output = res.stdout.strip()
+            
+            summary = [
+                "KERNEL PROCESS AUDIT SUMMARY",
+                "============================",
+                "Top Memory-Consuming Processes (Win32_Process CIM Kernel Audit):",
+                output
+            ]
+            return "\n".join(summary)
+        except Exception as e:
+            return f"Kernel process audit error: {e}"

@@ -143,15 +143,42 @@ class UIAController:
                         except Exception as ex:
                             return f"Failed to click UIA control '{c.Name}': {ex}"
 
-            # 1. Try Exact or Substring match
-            ctrl = top_win.Control(searchDepth=6, SubName=query)
-            if not ctrl.Exists(maxSearchSeconds=1):
-                ctrl = top_win.Control(searchDepth=6, AutomationId=query)
+            # Calculator button alias mapping (maps symbols, digits, and words to native Windows Calculator AutomationId / Name)
+            calc_aliases = {
+                "0": ["num0Button", "Zero", "0"],
+                "1": ["num1Button", "One", "1"],
+                "2": ["num2Button", "Two", "2"],
+                "3": ["num3Button", "Three", "3"],
+                "4": ["num4Button", "Four", "4"],
+                "5": ["num5Button", "Five", "5"],
+                "6": ["num6Button", "Six", "6"],
+                "7": ["num7Button", "Seven", "7"],
+                "8": ["num8Button", "Eight", "8"],
+                "9": ["num9Button", "Nine", "9"],
+                "+": ["plusButton", "Plus", "+", "Add"],
+                "-": ["minusButton", "Minus", "-", "Subtract"],
+                "*": ["multiplyButton", "Multiply by", "Multiply", "*", "Times"],
+                "/": ["divideButton", "Divide by", "Divide", "/"],
+                "=": ["equalButton", "Equals", "Equal", "="],
+                "c": ["clearButton", "Clear", "C"],
+                "ce": ["clearEntryButton", "Clear entry", "CE"],
+            }
             
-            if ctrl.Exists(maxSearchSeconds=1):
-                res = safe_click(ctrl)
-                time.sleep(0.5)
-                return res
+            q_norm = str(query).lower().strip()
+            search_terms = [query]
+            if q_norm in calc_aliases:
+                search_terms = calc_aliases[q_norm] + search_terms
+            
+            # 1. Try Exact or Substring match
+            for term in search_terms:
+                ctrl = top_win.Control(searchDepth=6, SubName=term)
+                if not ctrl.Exists(maxSearchSeconds=0.5):
+                    ctrl = top_win.Control(searchDepth=6, AutomationId=term)
+                
+                if ctrl.Exists(maxSearchSeconds=0.5):
+                    res = safe_click(ctrl)
+                    time.sleep(0.3)
+                    return res
             
             # 2. Fallback: Fuzzy String Matching using difflib across all window controls
             all_controls = []

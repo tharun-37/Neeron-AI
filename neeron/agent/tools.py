@@ -181,7 +181,18 @@ class AgentToolRegistry:
                 "type": "function",
                 "function": {
                     "name": "analyze_task_manager",
-                    "description": "Open Windows Task Manager (taskmgr), scan all active processes for CPU & Memory/RAM usage, and analyze for resource-heavy apps or potential malware.",
+                    "description": "Scan active system processes via Win32 Kernel CIM queries (Win32_Process) and return a concise summary of top CPU/RAM consuming processes.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {}
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "audit_kernel_processes",
+                    "description": "Audit active system processes via Win32 Kernel CIM provider (Win32_Process) and return a concise high-level process summary.",
                     "parameters": {
                         "type": "object",
                         "properties": {}
@@ -335,6 +346,46 @@ class AgentToolRegistry:
                             "url": {"type": "string", "description": "URL to open (e.g. 'google.com', 'gmail.com')"}
                         },
                         "required": ["url"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "execute_cdp_command",
+                    "description": "Execute raw Chrome DevTools Protocol (CDP) commands directly on Selenium Chrome (CDP remote debugging port 9222).",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "cmd": {"type": "string", "description": "CDP command name (e.g. 'Page.reload', 'DOM.querySelector', 'Network.enable')"},
+                            "params": {"type": "object", "description": "Dictionary of parameters for the CDP command"}
+                        },
+                        "required": ["cmd"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "cdp_evaluate_js",
+                    "description": "Evaluate arbitrary JavaScript on the active Chrome tab using CDP Runtime.evaluate.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "script": {"type": "string", "description": "JavaScript code string to evaluate on the page"}
+                        },
+                        "required": ["script"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "cdp_get_console_logs",
+                    "description": "Fetch live browser console logs from Chrome via CDP.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {}
                     }
                 }
             },
@@ -516,6 +567,103 @@ class AgentToolRegistry:
             {
                 "type": "function",
                 "function": {
+                    "name": "gui_click",
+                    "description": "Click mouse at specific screen coordinates (x, y) on the desktop.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "x": {"type": "integer", "description": "X screen pixel coordinate"},
+                            "y": {"type": "integer", "description": "Y screen pixel coordinate"},
+                            "button": {"type": "string", "description": "Mouse button: 'left', 'right', or 'middle'", "default": "left"},
+                            "clicks": {"type": "integer", "description": "Number of clicks (1 for single, 2 for double)", "default": 1}
+                        },
+                        "required": ["x", "y"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "gui_type",
+                    "description": "Type text into currently focused input field or desktop window.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "text": {"type": "string", "description": "Text to type"},
+                            "press_enter": {"type": "boolean", "description": "Whether to press Enter key after typing", "default": True}
+                        },
+                        "required": ["text"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "gui_hotkey",
+                    "description": "Press key combinations or hotkey sequence (e.g. ['ctrl', 'c'], ['alt', 'tab'], ['win'], ['enter']).",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "keys": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                                "description": "List of key names (e.g. ['ctrl', 'v'], ['alt', 'f4'], ['enter'])"
+                            }
+                        },
+                        "required": ["keys"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "gui_scroll",
+                    "description": "Scroll mouse wheel up (positive amount) or down (negative amount).",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "amount": {"type": "integer", "description": "Scroll amount (e.g. -500 for down, 500 for up)"},
+                            "x": {"type": "integer", "description": "Optional X coordinate to move cursor before scrolling"},
+                            "y": {"type": "integer", "description": "Optional Y coordinate to move cursor before scrolling"}
+                        },
+                        "required": ["amount"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "gui_drag",
+                    "description": "Drag mouse from start (x, y) coordinates to end (x, y) coordinates.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "start_x": {"type": "integer", "description": "Starting X coordinate"},
+                            "start_y": {"type": "integer", "description": "Starting Y coordinate"},
+                            "end_x": {"type": "integer", "description": "Ending X coordinate"},
+                            "end_y": {"type": "integer", "description": "Ending Y coordinate"}
+                        },
+                        "required": ["start_x", "start_y", "end_x", "end_y"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "focus_window",
+                    "description": "Find and bring a window matching title query into foreground focus.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "title_query": {"type": "string", "description": "Title query of window to focus"}
+                        },
+                        "required": ["title_query"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
                     "name": "execute_shell",
                     "description": "Execute a Windows PowerShell or CMD shell command with full system access.",
                     "parameters": {
@@ -605,6 +753,18 @@ class AgentToolRegistry:
                     url = "https://www.google.com"
                 return self.system_controller.open_browser(url)
             
+            elif name == "execute_cdp_command":
+                cmd = args.get("cmd", "")
+                params = args.get("params", {})
+                return self.system_controller.execute_cdp_command(cmd, params=params)
+            
+            elif name == "cdp_evaluate_js":
+                script = args.get("script", "")
+                return self.system_controller.cdp_evaluate_js(script)
+            
+            elif name == "cdp_get_console_logs":
+                return self.system_controller.cdp_get_console_logs()
+            
             elif name == "browser_click":
                 query = args.get("query", "")
                 return self.system_controller.browser_click(query)
@@ -643,6 +803,25 @@ class AgentToolRegistry:
                     keys = [keys]
                 return self.gui.press_hotkey(keys)
             
+            elif name == "gui_scroll":
+                amount = int(args.get("amount", -500))
+                x = args.get("x", None)
+                y = args.get("y", None)
+                if x is not None: x = int(x)
+                if y is not None: y = int(y)
+                return self.gui.scroll(amount, x=x, y=y)
+            
+            elif name == "gui_drag":
+                start_x = int(args.get("start_x", 0))
+                start_y = int(args.get("start_y", 0))
+                end_x = int(args.get("end_x", 0))
+                end_y = int(args.get("end_y", 0))
+                return self.gui.drag(start_x, start_y, end_x, end_y)
+            
+            elif name == "focus_window":
+                title_query = args.get("title_query", "")
+                return self.gui.focus_window(title_query)
+            
             elif name == "open_application":
                 app_name = args.get("app_name", "")
                 if "task" in app_name.lower() or "taskmgr" in app_name.lower():
@@ -652,21 +831,21 @@ class AgentToolRegistry:
                 success, msg = self.app_manager.open_app(app_name)
                 return msg
             
-            elif name == "analyze_task_manager":
-                return self.system_controller.analyze_task_manager()
+            elif name == "analyze_task_manager" or name == "audit_kernel_processes":
+                return self.kernel.audit_kernel_processes()
             
             elif name == "inspect_kernel_drivers":
-                return self.kernel_service.inspect_kernel_drivers()
+                return self.kernel.inspect_kernel_drivers()
             
             elif name == "audit_security_events":
                 max_events = int(args.get("max_events", 10))
-                return self.kernel_service.audit_security_events(max_events)
+                return self.kernel.audit_security_events(max_events)
             
             elif name == "audit_network_sockets":
-                return self.kernel_service.audit_network_sockets()
+                return self.kernel.audit_network_sockets()
             
             elif name == "audit_scheduled_persistence":
-                return self.kernel_service.audit_scheduled_persistence()
+                return self.kernel.audit_scheduled_persistence()
             
             elif name == "close_application":
                 app_name = args.get("app_name", "")

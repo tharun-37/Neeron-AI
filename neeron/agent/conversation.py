@@ -13,8 +13,11 @@ class ConversationManager:
         if system_prompt:
             self.history.append({"role": "system", "content": system_prompt})
     
-    def add_user(self, content: str):
-        self.history.append({"role": "user", "content": content})
+    def add_user(self, content: str, images: Optional[List[str]] = None):
+        msg = {"role": "user", "content": content}
+        if images:
+            msg["images"] = images
+        self.history.append(msg)
         logger.debug(f"Added user message: {content[:50]}...")
     
     def add_assistant(self, content: str, tool_calls: Optional[List] = None):
