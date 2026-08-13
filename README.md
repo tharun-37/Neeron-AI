@@ -3,6 +3,7 @@
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![Ollama Vision](https://img.shields.io/badge/Ollama-Gemma4_Vision-000000?style=for-the-badge&logo=ollama&logoColor=white)](https://ollama.com/)
 [![Windows UIA](https://img.shields.io/badge/OS-Windows_10%2F11_UIA-0078D6?style=for-the-badge&logo=windows&logoColor=white)](https://microsoft.com)
+[![PyQt6 Dynamic Island](https://img.shields.io/badge/GUI-Dynamic_Island_HUD-00F0FF?style=for-the-badge&logo=qt&logoColor=white)](https://pypi.org/project/PyQt6/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 
 Neeron AI is a **100% private, local, voice-activated multimodal desktop agent** engineered for Windows. It provides full system-wide access to control the Windows OS desktop environment using native UI Automation (UIA), Selenium browser control, Task Manager process analytics, Win32 kernel event monitoring, Window Layout Snap tiling (`SetWindowPos`), Windows Registry theme controls, persistent vector memory, neural speech synthesis, and an **iOS 27 Dynamic Island Glass Capsule HUD**—all optimized to operate within a strict **8GB GPU VRAM hardware budget**.
@@ -12,16 +13,17 @@ Neeron AI is a **100% private, local, voice-activated multimodal desktop agent**
 ## TABLE OF CONTENTS
 1. [AI Model Specifications](#1-ai-model-specifications)
 2. [Dynamic Island Floating Glass HUD (`--gui`)](#2-dynamic-island-floating-glass-hud---gui)
-3. [End-to-End System Pipeline & Diagrams](#3-end-to-end-system-pipeline--diagrams)
-4. [Deep Codebase & Module Specifications](#4-deep-codebase--module-specifications)
-5. [Complete Tool Definition Matrix](#5-complete-tool-definition-matrix)
-6. [Hardware & VRAM Optimization Protocols](#6-hardware--vram-optimization-protocols)
-7. [Installation & Setup Blueprint](#7-installation--setup-blueprint)
-8. [UN Sustainable Development Goals (SDGs)](#8-un-sustainable-development-goals-sdgs)
+3. [System Libraries & Dependencies Matrix](#3-system-libraries--dependencies-matrix)
+4. [End-to-End System Pipeline & Diagrams](#4-end-to-end-system-pipeline--diagrams)
+5. [Deep Codebase & Module Specifications](#5-deep-codebase--module-specifications)
+6. [Complete Tool Definition Matrix](#6-complete-tool-definition-matrix)
+7. [Hardware & VRAM Optimization Protocols](#7-hardware--vram-optimization-protocols)
+8. [Installation & Setup Blueprint](#8-installation--setup-blueprint)
+9. [UN Sustainable Development Goals (SDGs)](#9-un-sustainable-development-goals-sdgs)
 
 ---
 
-## 1. AI MODEL SPECIFICATIONSICATIONS
+## 1. AI MODEL SPECIFICATIONS
 
 ### A. Multimodal Vision Model (`gemma4:e4b-it-qat`)
 * **Architecture**: Gemma 4 Multimodal Vision Transformer tuned for instruction following and visual spatial reasoning.
@@ -68,7 +70,31 @@ python main.py --gui
 
 ---
 
-## 2. END-TO-END SYSTEM PIPELINE & DIAGRAMS
+## 3. SYSTEM LIBRARIES & DEPENDENCIES MATRIX
+
+| Library / Module | Purpose in Neeron AI | Core Functions & Classes Utilized |
+| :--- | :--- | :--- |
+| **`PyQt6`** (`QtCore`, `QtWidgets`, `QtGui`) | macOS / iOS 27 Dynamic Island Floating Glass HUD Capsule | `DynamicIslandHUD`, `AudioEqualizerWidget` (6-bar FFT visualizer), `GreenCircularSpinner` (QPainter arc loader), `QVariantAnimation` (OutCubic geometry morphing), `QSystemTrayIcon`, `QPixmap` (40x24px vision thumbnail preview), `keyPressEvent` (`[Enter]` / `[Esc]` approval cards). |
+| **`faster_whisper`** | Speech-to-Text inference engine | `WhisperModel("base", compute_type="int8", device="cpu")` for 100% CPU-bound voice transcription, VAD energy thresholding, and ANSI live terminal renderer (`ANSILiveRenderer`). |
+| **`edge_tts`** | Primary Neural Text-to-Speech synthesis | `Communicate(text, voice="en-US-ChristopherNeural")` streaming async MP3 audio over WebSockets with 0% GPU VRAM footprint. |
+| **`pyttsx3`** | Fallback Offline Text-to-Speech | Offline `pyttsx3.init()` engine wrapper bound to native Windows SAPI5 audio drivers. |
+| **`requests`** / **`ollama`** | Multimodal LLM Vision Reasoning | Interfacing with Ollama HTTP API (`http://localhost:11434/api/chat`) for Gemma 4 (`gemma4:e4b-it-qat`) GPU VRAM offloaded multimodal tool dispatching. |
+| **`chromadb`** | Long-Term Persistent Vector Memory | `chromadb.PersistentClient()` with `all-MiniLM-L6-v2` dense embeddings stored in SQLite vector database for fact storage and cosine similarity retrieval. |
+| **`selenium`** | Automated Web Browser Automation | `webdriver.Chrome()`, anti-bot CDP script override (`navigator.webdriver` removal), human-like variable typing (`_type_human_like`), webpage element clicking, and URL rendering. |
+| **`webdriver_manager`** | Browser Driver Binary Management | `ChromeDriverManager().install()` and `GeckoDriverManager().install()` for automated ChromeDriver and GeckoDriver setup. |
+| **`pywinauto`** & **`comtypes`** | Windows UI Automation (UIA) | `pywinauto.Desktop(backend="uia")`, UIA accessibility tree traversal, AutomationId searching, element text reading, and `GetInvokePattern().Invoke()` control clicks. |
+| **`pywin32`** (`win32gui`, `win32api`, `win32con`, `win32evtlog`, `winreg`) | Win32 System Control & Event Audit | Native window handles (`FindWindowW`, `GetForegroundWindow`), Windows Registry theme switching (`HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize`), System Event Log reading, and SCM integration. |
+| **`ctypes`** | Hardware Mouse Events & Layout Snapping | Win32 `SetWindowPos` window snapping (50/50 left/right split, top split, center, maximize, minimize), `SetCursorPos`, `mouse_event` (DOWN/UP), and `SetProcessDPIAware`. |
+| **`psutil`** | Real-Time Telemetry & Process Analytics | `psutil.virtual_memory().percent` for CPU RAM telemetry counters, active task manager scanning, and resource anomaly detection. |
+| **`torch`** | CUDA GPU VRAM Telemetry | `torch.cuda.memory_allocated()` for real-time NVIDIA GPU VRAM memory monitoring inside the Dynamic Island HUD. |
+| **`pyautogui`** | Desktop GUI Input Control | Desktop mouse clicks (`click`), hotkey combinations (`win+left`, `win+right`, `win+tab`), text typing, and screen coordinate mapping. |
+| **`pyaudio`** | Live Microphone Audio Input Stream | Capturing 16kHz PCM 16-bit mono audio stream (`pyaudio.paInt16`) with RMS decibel calculation. |
+| **`Pillow`** (`PIL.Image`, `PIL.ImageGrab`) | Image Processing & Perception | Desktop screenshot capture, active application window bounding box cropping, thumbnail scaling for HUD preview, and PNG/JPEG byte stream encoding. |
+| **`opencv-python`** (`cv2`, `numpy`) | Computer Vision Matrix Processing | Image matrix manipulation, template matching, and numpy array slicing (`np.abs(audio_data) > 0.015`) for audio VAD silence trimming. |
+
+---
+
+## 4. END-TO-END SYSTEM PIPELINE & DIAGRAMS
 
 ### A. High-Level System Dataflow
 
@@ -201,6 +227,16 @@ sequenceDiagram
   * `click_uia_element(query)`: Searches active window tree for control matching `query`, invokes `InvokePattern`, `LegacyIAccessiblePattern.DoDefaultAction()`, or fallback center-point click.
   * `read_active_window_text()`: Traverses document and text controls in foreground window and extracts combined text lines.
 
+---
+
+## 5. DEEP CODEBASE & MODULE SPECIFICATIONS
+
+#### 1. `neeron/agent/llm.py` (`OllamaAgent`)
+* **Role**: Multimodal reasoning core orchestrating Ollama API calls and iterative tool dispatching.
+* **Key Methods**:
+  * `process_request(user_prompt)`: Appends user query, fetches active screen snapshot, dispatches tools in a sequential loop (up to 15 steps), handles `ask_user_voice` interruptions, and invokes `task_completed` upon verification.
+  * `clean_invalid_images()`: Scans history buffer and strips deleted/stale image paths before sending request payloads.
+
 #### 2. `neeron/os_world/system.py` (`SystemController`)
 * **Role**: Shell command executor, Selenium Chrome driver manager, and Task Manager analytics engine.
 * **Key Methods**:
@@ -209,12 +245,19 @@ sequenceDiagram
   * `browser_click(query)`: Finds element by text, ID, CSS, or XPath, clicks element, and polls up to 5 seconds for URL redirection.
   * `analyze_task_manager()`: Launches `taskmgr`, iterates processes via `psutil`, computes RAM RSS MB and CPU %, sorts top consumers, and flags processes running from temporary directories.
   * `execute_shell(command)`: Validates command against unsafe destruction patterns and executes via PowerShell/CMD.
+  * `set_windows_theme(mode)`: Switches Windows OS Theme between Dark and Light mode via `winreg`.
+  * `set_screen_brightness(level)`: Sets display screen brightness via WMI PowerShell.
+  * `manage_window_layout(action)`: Snaps active window to 50/50 split, top split, center, maximize, or minimize via Win32 `SetWindowPos`.
 
 #### 3. `neeron/os_world/kernel_controller.py` (`KernelServiceController`)
-* **Role**: Low-level Win32 kernel event reader and hardware input injector.
+* **Role**: Low-level Win32 kernel event reader, hardware input injector, and security auditor.
 * **Key Methods**:
   * `check_kernel_events()`: Opens Windows Event Log (`win32evtlog`) for System and ETW event providers.
   * `inject_hardware_click(x, y)`: Calls Win32 `SetCursorPos` and `mouse_event` (SendInput API) to inject hardware-level clicks below application event filters.
+  * `inspect_kernel_drivers()`: Inspects active Windows Filter Drivers (`fltmc filters`) and kernel driver modules.
+  * `audit_security_events(max_events)`: Audits recent Windows Security Event Logs (failed logons, privilege escalation, process creation).
+  * `audit_network_sockets()`: Audits open listening network ports and bound process IDs using `Get-NetTCPConnection`.
+  * `audit_scheduled_persistence()`: Audits active scheduled tasks and startup persistence hooks.
 
 #### 4. `neeron/os_world/vision.py` (`ScreenPerception`)
 * **Role**: Active window screenshot cropping and perception engine.
@@ -233,7 +276,7 @@ sequenceDiagram
 
 ---
 
-## 4. COMPLETE TOOL DEFINITION MATRIX
+## 6. COMPLETE TOOL DEFINITION MATRIX
 
 | Tool Name | Class Source | Parameters | Functional Description |
 | :--- | :--- | :--- | :--- |
@@ -243,6 +286,13 @@ sequenceDiagram
 | **`query_memory`** | `PersistentMemoryDB` | `query` (str) | Queries vector memory for matching facts or stored instructions. |
 | **`check_kernel_events`**| `KernelServiceController` | None | Queries Windows System Event Logs & ETW kernel process events. |
 | **`inject_hardware_click`**| `KernelServiceController` | `x` (int), `y` (int) | Injects hardware mouse click via Win32 `SendInput` API. |
+| **`inspect_kernel_drivers`**| `KernelServiceController` | None | Inspects active Windows Filter Drivers (`fltmc`) and kernel driver modules. |
+| **`audit_security_events`**| `KernelServiceController` | `max_events` (int) | Audits recent Windows Security Event Logs (failed logons, process creation). |
+| **`audit_network_sockets`**| `KernelServiceController` | None | Audits listening network ports, TCP/UDP sockets, and bound process IDs. |
+| **`audit_scheduled_persistence`**| `KernelServiceController` | None | Audits active scheduled tasks and startup persistence hooks. |
+| **`set_windows_theme`** | `SystemController` | `mode` ('dark'/'light') | Switches Windows OS Theme between Dark Mode and Light Mode via `winreg`. |
+| **`set_screen_brightness`**| `SystemController` | `level` (int 0-100) | Sets display screen brightness level via WMI PowerShell. |
+| **`manage_window_layout`**| `SystemController` | `action` (str) | Snaps active window to 50/50 split, top split, center, max, or min via `SetWindowPos`. |
 | **`analyze_task_manager`**| `SystemController` | None | Opens Task Manager (`taskmgr`), scans RAM/CPU, and flags anomalies. |
 | **`inspect_uia_tree`**| `UIAController` | None | Parses native Windows UIA accessibility tree of foreground window. |
 | **`read_window_text`** | `UIAController` | None | Reads document text and edit box values directly from active window. |
@@ -265,7 +315,7 @@ sequenceDiagram
 
 ---
 
-## 5. HARDWARE & VRAM OPTIMIZATION PROTOCOLS
+## 7. HARDWARE & VRAM OPTIMIZATION PROTOCOLS
 
 ```
 +---------------------------------------------------------------------------------+
@@ -287,7 +337,7 @@ sequenceDiagram
 
 ---
 
-## 6. INSTALLATION & SETUP BLUEPRINT
+## 8. INSTALLATION & SETUP BLUEPRINT
 
 ### Prerequisites
 * **OS**: Windows 10 or Windows 11 (64-bit).
@@ -316,7 +366,7 @@ python main.py
 
 ---
 
-## 7. UN SUSTAINABLE DEVELOPMENT GOALS (SDGs)
+## 9. UN SUSTAINABLE DEVELOPMENT GOALS (SDGs)
 
 * **SDG 9: Industry, Innovation, and Infrastructure (Target 9.5)**: Advances edge AI architecture by executing vision, speech recognition, and OS automation locally on consumer hardware.
 * **SDG 10: Reduced Inequalities (Target 10.2)**: Acts as an assistive accessibility tool for users with physical or motor impairments by enabling hands-free OS control via native Windows UIA.

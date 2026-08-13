@@ -328,12 +328,12 @@ class AgentToolRegistry:
                 "type": "function",
                 "function": {
                     "name": "open_gmail_and_read_first_email",
-                    "description": "Open Chrome in Incognito mode, go to Gmail, sign in with email 'guessmymail0@gmail.com' and password 'blahblahblahzero', open the first email in the inbox, and inspect screenshot content.",
+                    "description": "Open Chrome in Incognito mode, go to real Gmail (https://mail.google.com/), sign in with provided email and password, and open the first email in the inbox.",
                     "parameters": {
                         "type": "object",
                         "properties": {
-                            "email": {"type": "string", "description": "Email address", "default": "guessmymail0@gmail.com"},
-                            "password": {"type": "string", "description": "Password", "default": "blahblahblahzero"}
+                            "email": {"type": "string", "description": "User email address"},
+                            "password": {"type": "string", "description": "User password"}
                         }
                     }
                 }

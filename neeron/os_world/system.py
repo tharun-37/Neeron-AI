@@ -182,8 +182,8 @@ class SystemController:
             logger.error(f"Failed to open browser: {e}")
             return f"Error opening URL {url}: {e}"
     
-    def open_gmail_and_read_first_email(self, email: str = "guessmymail0@gmail.com", password: str = "blahblahblahzero", use_real_gmail: bool = False) -> str:
-        """Automates Chrome Incognito Gmail login (real Google or local HTML mock) with human-like typing and clickable email reading."""
+    def open_gmail_and_read_first_email(self, email: str = "", password: str = "", use_real_gmail: bool = True) -> str:
+        """Automates Chrome Incognito Gmail login on real Google Mail (https://mail.google.com/) with human-like typing and email reading."""
         driver = self.get_browser_driver()
         if not driver:
             return "Failed to start Selenium Chrome Incognito driver."
@@ -193,13 +193,8 @@ class SystemController:
         from selenium.webdriver.support import expected_conditions as EC
         
         try:
-            mock_path = Path("d:/Codings/Neeron/mock_gmail.html").resolve()
-            if use_real_gmail or not mock_path.exists():
-                target_url = "https://mail.google.com/"
-                logger.info("Navigating to REAL Google Gmail sign-in in Chrome Incognito...")
-            else:
-                target_url = mock_path.as_uri()
-                logger.info(f"Navigating to local HTML Gmail mock interface at {target_url}...")
+            target_url = "https://mail.google.com/"
+            logger.info(f"Navigating to REAL Google Gmail interface ({target_url})...")
             
             driver.get(target_url)
             time.sleep(2.5)
