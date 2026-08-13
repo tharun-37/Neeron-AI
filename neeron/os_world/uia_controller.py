@@ -122,20 +122,36 @@ class UIAController:
             
             top_win = focus_win.GetTopLevelControl()
             
+            def safe_click(c):
+                try:
+                    c.GetInvokePattern().Invoke()
+                    return f"Invoked UIA control '{c.Name}'"
+                except Exception:
+                    try:
+                        c.Click()
+                        return f"Clicked UIA control '{c.Name}'"
+                    except Exception:
+                        try:
+                            import ctypes
+                            rect = c.BoundingRectangle
+                            cx = (rect.left + rect.right) // 2
+                            cy = (rect.top + rect.bottom) // 2
+                            ctypes.windll.user32.SetCursorPos(cx, cy)
+                            ctypes.windll.user32.mouse_event(2, 0, 0, 0, 0) # DOWN
+                            ctypes.windll.user32.mouse_event(4, 0, 0, 0, 0) # UP
+                            return f"Hardware clicked UIA control '{c.Name}' at center ({cx}, {cy})"
+                        except Exception as ex:
+                            return f"Failed to click UIA control '{c.Name}': {ex}"
+
             # 1. Try Exact or Substring match
             ctrl = top_win.Control(searchDepth=6, SubName=query)
             if not ctrl.Exists(maxSearchSeconds=1):
                 ctrl = top_win.Control(searchDepth=6, AutomationId=query)
             
             if ctrl.Exists(maxSearchSeconds=1):
-                try:
-                    ctrl.GetInvokePattern().Invoke()
-                    time.sleep(0.5)
-                    return f"Invoked UIA control '{ctrl.Name}' (ID: '{ctrl.AutomationId}')"
-                except Exception:
-                    ctrl.Click()
-                    time.sleep(0.5)
-                    return f"Clicked UIA control '{ctrl.Name}' (ID: '{ctrl.AutomationId}')"
+                res = safe_click(ctrl)
+                time.sleep(0.5)
+                return res
             
             # 2. Fallback: Fuzzy String Matching using difflib across all window controls
             all_controls = []
@@ -160,14 +176,9 @@ class UIAController:
                 if matches:
                     best_match = matches[0]
                     matched_ctrl = name_map[best_match]
-                    try:
-                        matched_ctrl.GetInvokePattern().Invoke()
-                        time.sleep(0.5)
-                        return f"Fuzzy matched and invoked UIA control '{matched_ctrl.Name}' (query: '{query}', best match: '{best_match}')"
-                    except Exception:
-                        matched_ctrl.Click()
-                        time.sleep(0.5)
-                        return f"Fuzzy matched and clicked UIA control '{matched_ctrl.Name}' (query: '{query}', best match: '{best_match}')"
+                    res = safe_click(matched_ctrl)
+                    time.sleep(0.5)
+                    return f"Fuzzy match ('{query}' -> '{best_match}'): {res}"
             
             return f"UIA control matching '{query}' not found in active window"
         except Exception as e:

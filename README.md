@@ -3,24 +3,26 @@
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![Ollama Vision](https://img.shields.io/badge/Ollama-Gemma4_Vision-000000?style=for-the-badge&logo=ollama&logoColor=white)](https://ollama.com/)
 [![Windows UIA](https://img.shields.io/badge/OS-Windows_10%2F11_UIA-0078D6?style=for-the-badge&logo=windows&logoColor=white)](https://microsoft.com)
+[![PyQt6 Dynamic Island](https://img.shields.io/badge/GUI-Dynamic_Island_HUD-00F0FF?style=for-the-badge&logo=qt&logoColor=white)](https://pypi.org/project/PyQt6/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 
-Neeron AI is a **100% private, local, voice-activated multimodal desktop agent** engineered for Windows. It provides full system-wide access to control the Windows OS desktop environment using native UI Automation (UIA), Selenium browser control, Task Manager process analytics, Win32 kernel event monitoring, persistent vector memory, and neural speech synthesis—all optimized to operate within a strict **8GB GPU VRAM hardware budget**.
+Neeron AI is a **100% private, local, voice-activated multimodal desktop agent** engineered for Windows. It provides full system-wide access to control the Windows OS desktop environment using native UI Automation (UIA), Selenium browser control, Task Manager process analytics, Win32 kernel event monitoring, Window Layout Snap tiling (`SetWindowPos`), Windows Registry theme controls, persistent vector memory, neural speech synthesis, and an **iOS 27 Dynamic Island Glass Capsule HUD**—all optimized to operate within a strict **8GB GPU VRAM hardware budget**.
 
 ---
 
 ## 📑 TABLE OF CONTENTS
 1. [AI Model Specifications](#1-ai-model-specifications)
-2. [End-to-End System Pipeline & Diagrams](#2-end-to-end-system-pipeline--diagrams)
-3. [Deep Codebase & Module Specifications](#3-deep-codebase--module-specifications)
-4. [Complete Tool Definition Matrix](#4-complete-tool-definition-matrix)
-5. [Hardware & VRAM Optimization Protocols](#5-hardware--vram-optimization-protocols)
-6. [Installation & Setup Blueprint](#6-installation--setup-blueprint)
-7. [UN Sustainable Development Goals (SDGs)](#7-un-sustainable-development-goals-sdgs)
+2. [Dynamic Island Floating Glass HUD (`--gui`)](#2-dynamic-island-floating-glass-hud---gui)
+3. [End-to-End System Pipeline & Diagrams](#3-end-to-end-system-pipeline--diagrams)
+4. [Deep Codebase & Module Specifications](#4-deep-codebase--module-specifications)
+5. [Complete Tool Definition Matrix](#5-complete-tool-definition-matrix)
+6. [Hardware & VRAM Optimization Protocols](#6-hardware--vram-optimization-protocols)
+7. [Installation & Setup Blueprint](#7-installation--setup-blueprint)
+8. [UN Sustainable Development Goals (SDGs)](#8-un-sustainable-development-goals-sdgs)
 
 ---
 
-## 1. AI MODEL SPECIFICATIONS
+## 1. AI MODEL SPECIFICATIONSICATIONS
 
 ### A. Multimodal Vision Model (`gemma4:e4b-it-qat`)
 * **Architecture**: Gemma 4 Multimodal Vision Transformer tuned for instruction following and visual spatial reasoning.
@@ -45,6 +47,25 @@ Neeron AI is a **100% private, local, voice-activated multimodal desktop agent**
 * **Embedding Model**: Default ONNX-accelerated `all-MiniLM-L6-v2` dense vector embedding engine.
 * **Storage Backend**: SQLite-backed persistent vector index located at `%TEMP%\neeron_memory_db`.
 * **Similarity Search**: Cosine similarity vector search returning top matching memory facts for user queries.
+
+---
+
+## 2. DYNAMIC ISLAND FLOATING GLASS HUD (`--gui`)
+
+Neeron AI includes a **macOS / iOS 27-inspired Dynamic Island Floating Glass HUD** widget built natively with `PyQt6`:
+
+* **Authentic Compact Pill Size (`190px × 36px`)**: Top-center desktop widget (`y = 12px`) with rounded `18px` pill corners.
+* **Smooth Morphing Geometry (`QVariantAnimation`)**: Morphing size expansion driven by cubic easing curves (`OutCubic`), expanding **strictly when TTS speech is actively playing**.
+* **Real-Time Audio FFT Equalizer (`AudioEqualizerWidget`)**: 6 live vertical decibel visualizer bars (`#10B981` / `#00F0FF`) animated during microphone speech recording.
+* **System Telemetry Pill**: Real-time GPU VRAM and CPU RAM monitoring displayed on a dedicated line (`GPU 4.2G | RAM 74%`) during execution steps.
+* **Vision Thumbnail Preview**: 40x24px rounded desktop screenshot preview frame displayed during visual screen inspection.
+* **Interactive Confirmation Approval Cards**: Micro permission cards with keyboard shortcuts (`[Enter] Confirm` / `[Esc] Cancel`) for administrative operations (`manage_registry`, `execute_admin_command`).
+* **Deep Matte Black Styling**: Deep obsidian dark linear gradient (`rgba(9, 9, 11, 0.96)`) with a translucent `0.5px` white border (`rgba(255, 255, 255, 0.22)`).
+
+```powershell
+# Launch Neeron AI with Dynamic Island GUI HUD
+python main.py --gui
+```
 
 ---
 

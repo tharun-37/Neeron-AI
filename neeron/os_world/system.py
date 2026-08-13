@@ -515,6 +515,94 @@ class SystemController:
         except Exception as e:
             return f"Error managing Virtual Desktops: {e}"
     
+    def set_windows_theme(self, mode: str = "dark") -> str:
+        """Switches Windows OS Theme between Dark Mode and Light Mode instantly using Windows Registry (winreg)."""
+        try:
+            if sys.platform != "win32":
+                return "Windows Theme switching is Windows-only."
+            import winreg
+            val = 0 if mode.lower() in ["dark", "darkmode", "night", "black"] else 1
+            key_path = r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_SET_VALUE) as key:
+                winreg.SetValueEx(key, "AppsUseLightTheme", 0, winreg.REG_DWORD, val)
+                winreg.SetValueEx(key, "SystemUsesLightTheme", 0, winreg.REG_DWORD, val)
+            mode_str = "DARK" if val == 0 else "LIGHT"
+            return f"Successfully switched Windows OS Theme to {mode_str} mode."
+        except Exception as e:
+            return f"Error setting Windows Theme: {e}"
+    
+    def set_screen_brightness(self, level: int = 50) -> str:
+        """Sets display screen brightness percentage (0-100) via WMI PowerShell."""
+        try:
+            level = max(0, min(100, int(level)))
+            if sys.platform == "win32":
+                cmd = f"(Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, {level})"
+                res = subprocess.run(["powershell", "-NoProfile", "-Command", cmd], capture_output=True, text=True)
+                return f"Successfully set display screen brightness to {level}%."
+            return "Brightness control is Windows-only."
+        except Exception as e:
+            return f"Error setting screen brightness: {e}"
+
+    def manage_window_layout(self, action: str = "snap_left", win_title: str = "") -> str:
+        """Snaps windows to 50/50 split views, tiles active apps side-by-side, or moves windows using SetWindowPos."""
+        try:
+            if sys.platform != "win32":
+                return "Window layout snapping is Windows-only."
+            
+            import ctypes
+            user32 = ctypes.windll.user32
+            import pyautogui
+            
+            hwnd = user32.GetForegroundWindow()
+            if win_title:
+                hwnd_target = user32.FindWindowW(None, win_title)
+                if hwnd_target:
+                    hwnd = hwnd_target
+            
+            if not hwnd:
+                return "No active target window found for layout snapping."
+            
+            sw = user32.GetSystemMetrics(0) # SM_CXSCREEN
+            sh = user32.GetSystemMetrics(1) # SM_CYSCREEN
+            
+            act = action.lower().strip()
+            
+            if act in ["snap_left", "left", "split_left"]:
+                user32.ShowWindow(hwnd, 9) # SW_RESTORE
+                user32.SetWindowPos(hwnd, 0, 0, 0, sw // 2, sh, 0x0040) # SWP_SHOWWINDOW
+                return "Snapped window to Left 50% split view."
+            
+            elif act in ["snap_right", "right", "split_right"]:
+                user32.ShowWindow(hwnd, 9)
+                user32.SetWindowPos(hwnd, 0, sw // 2, 0, sw // 2, sh, 0x0040)
+                return "Snapped window to Right 50% split view."
+            
+            elif act in ["snap_top", "top_half"]:
+                user32.ShowWindow(hwnd, 9)
+                user32.SetWindowPos(hwnd, 0, 0, 0, sw, sh // 2, 0x0040)
+                return "Snapped window to Top 50% split view."
+            
+            elif act in ["maximize", "max"]:
+                user32.ShowWindow(hwnd, 3) # SW_MAXIMIZE
+                return "Maximized target window."
+            
+            elif act in ["minimize", "min"]:
+                user32.ShowWindow(hwnd, 6) # SW_MINIMIZE
+                return "Minimized target window."
+            
+            elif act in ["center", "middle"]:
+                w, h = int(sw * 0.7), int(sh * 0.7)
+                x, y = (sw - w) // 2, (sh - h) // 2
+                user32.ShowWindow(hwnd, 9)
+                user32.SetWindowPos(hwnd, 0, x, y, w, h, 0x0040)
+                return "Centered window on screen."
+            
+            else:
+                pyautogui.hotkey('win', 'left')
+                return f"Applied Windows Snap hotkey '{action}' to window."
+        except Exception as e:
+            return f"Error snapping window layout: {e}"
+
     def cleanup(self):
         if self.driver:
             try:

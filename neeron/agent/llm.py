@@ -17,7 +17,8 @@ SYSTEM_PROMPT = (
     "You are Neeron, an autonomous vision-enabled desktop agent running on Windows OS.\n\n"
     "<ROLE>\n"
     "You have full system-wide administrative access to control the Windows desktop environment. "
-    "Execute user commands directly, methodically, and safely based strictly on what the user asks.\n"
+    "Execute user commands directly, methodically, and safely based strictly on what the user asks. "
+    "NEVER use emojis in any text output, voice responses, or summaries. Maintain a strictly professional, plain-text tone at all times.\n"
     "</ROLE>\n\n"
     "<PROBLEM_SOLVING_WORKFLOW>\n"
     "1. EXPLORATION: Use 'inspect_uia_tree' or 'read_window_text' to extract native window controls and text lines before taking actions.\n"
@@ -26,6 +27,7 @@ SYSTEM_PROMPT = (
     "4. VERIFICATION: Inspect window text or attached screenshots to verify action completion before invoking 'task_completed'.\n"
     "</PROBLEM_SOLVING_WORKFLOW>\n\n"
     "<SPECIALIZED_TOOL_MAPPINGS>\n"
+    "• WINDOWS EXPLORER & ANY SCREEN ELEMENT: Just like Selenium on web pages, you have full capability to click ANY item, folder, file, icon, or menu in Windows Explorer, File Explorer, Desktop, or desktop apps. First use 'inspect_uia_tree' or 'read_window_text', then call 'click_uia_element' with the target item name/ID (auto-falls back to bounding rectangle center coordinates). If UIA is unavailable, inspect attached screenshots and call 'gui_click(x, y)' or 'inject_hardware_click(x, y)' to click coordinates directly.\n"
     "• CALCULATOR: To open Calculator, use 'open_application' with 'calc'. Click UIA buttons directly using 'click_uia_element' ('Zero'...'Nine', 'Plus', 'Minus', 'Multiply by', 'Divide by', 'Equals', 'Clear'). Read results via 'read_window_text'.\n"
     "• TASK MANAGER & ANOMALIES: Call 'analyze_task_manager' (or 'taskmgr') to scan RAM/CPU usage and flag resource-heavy or suspicious executables.\n"
     "• ADMINISTRATIVE & KERNEL: Use 'manage_registry' to read/write Windows Registry, 'manage_system_services' to start/stop Windows Services, 'manage_firewall_rule' for Firewall rules, and 'execute_admin_command' for elevated PowerShell admin execution.\n"
@@ -53,8 +55,21 @@ class OllamaAgent:
         )
     
     def process_request(self, user_prompt: str):
-        print(f"\nUser Command: '{user_prompt}'")
-        print("Executing GUI Command (Audio recording paused)...")
+        user_prompt = str(user_prompt or "").strip().lstrip(",.?!;:_-'\" ").strip()
+        if not user_prompt:
+            return
+        
+        try:
+            from neeron.ui.hud_widget import notify_hud
+            notify_hud(f"Executing: {user_prompt[:30]}...", "executing")
+        except Exception:
+            pass
+        
+        try:
+            from neeron.audio.stt import ANSILiveRenderer
+            renderer = ANSILiveRenderer()
+        except Exception:
+            renderer = None
         
         self.conversation.clean_invalid_images()
         self.conversation.add_user(user_prompt)
@@ -65,8 +80,11 @@ class OllamaAgent:
         
         while not task_done and step_count < self.config.max_agent_steps:
             step_count += 1
-            print(f"\nThinking with Vision Model '{self.config.model}'...")
-            print(f"  [GPU] Offloading '{self.config.model}' layers to NVIDIA GPU VRAM...")
+            if renderer:
+                renderer.render([
+                    f"● EXECUTING COMMAND: '{user_prompt}'",
+                    f"  [AI Reasoning]: Thinking with {self.config.model} (GPU Step {step_count})..."
+                ])
             
             try:
                 response = ollama.chat(
@@ -77,13 +95,20 @@ class OllamaAgent:
                 )
             except Exception as e:
                 logger.error(f"Ollama chat error: {e}")
+                if renderer:
+                    renderer.clear()
                 print(f"Ollama execution error: {e}")
                 break
             
             msg = response.message
             
             if hasattr(msg, 'tool_calls') and msg.tool_calls:
-                print(f"Executing {len(msg.tool_calls)} GUI action(s)...")
+                if renderer:
+                    renderer.render([
+                        f"● EXECUTING COMMAND: '{user_prompt}'",
+                        f"  [GUI Action]: Executing {len(msg.tool_calls)} action(s)..."
+                    ])
+                
                 tool_calls_list = []
                 for tc in msg.tool_calls:
                     raw_tc_args = tc.function.arguments
@@ -105,7 +130,7 @@ class OllamaAgent:
                     }
                     tool_calls_list.append(tc_dict)
                 
-                self.conversation.add_assistant(msg.content or "", tool_calls=tool_calls_list)
+                self.conversation.add_assistant("", tool_calls=tool_calls_list)
                 
                 for tool_call in msg.tool_calls:
                     func_name = tool_call.function.name
@@ -119,9 +144,14 @@ class OllamaAgent:
                     else:
                         parsed_args = raw_args or {}
                     
-                    print(f"  -> Action: {func_name}({parsed_args})")
+                    try:
+                        from neeron.ui.hud_widget import notify_hud
+                        action_title = func_name.replace("_", " ").title()
+                        notify_hud(f"task: {action_title}", "executing")
+                    except Exception:
+                        pass
+                    
                     tool_result = self.tool_registry.dispatch(func_name, parsed_args)
-                    print(f"  <- Result: {tool_result}")
                     
                     tool_id = getattr(tool_call, 'id', func_name)
                     tool_msg = {"role": "tool", "tool_call_id": tool_id, "content": str(tool_result)}
@@ -149,12 +179,28 @@ class OllamaAgent:
                 self.conversation.add_assistant(final_summary)
                 task_done = True
         
-        print("\n" + "=" * 80)
-        print("GUI EXECUTION FINISHED")
-        print("=" * 80)
-        if final_summary:
-            print(f"Summary: {final_summary}")
-            self.tts.speak(final_summary)
+        if renderer:
+            renderer.clear()
+        
+        def _clean_spoken_text(text: str) -> str:
+            if not text:
+                return ""
+            import re
+            # Strip 4-byte Unicode emoji characters
+            text = re.sub(r'[\U00010000-\U0010ffff]', '', text)
+            if "<channel|>" in text:
+                text = text.split("<channel|>")[-1]
+            lines = []
+            for line in text.splitlines():
+                line_str = line.strip()
+                if line_str.startswith("Plan:") or line_str.startswith("Summary:") or line_str.startswith("The user is asking") or line_str.startswith("This does not require") or line_str.startswith("I should fulfill"):
+                    continue
+                lines.append(line)
+            cleaned = " ".join(lines).strip()
+            return cleaned if cleaned else text
+
+        clean_text = _clean_spoken_text(final_summary)
+        if clean_text:
+            self.tts.speak(clean_text)
         else:
             self.tts.speak("Task execution finished.")
-        print("=" * 80 + "\n")

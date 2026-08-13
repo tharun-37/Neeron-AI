@@ -20,14 +20,18 @@ class NeeronDaemon:
     def __init__(self, config: Optional[NeeronConfig] = None):
         self.config = config or NeeronConfig()
         
-        print("\n" + "=" * 80)
-        print("NEERON AI - VISION-ENABLED AUTONOMOUS AGENT")
-        print("=" * 80)
-        print(f"  Wake word:       '{self.config.wake_word}'")
-        print(f"  Ollama Model:    {self.config.model} (Vision Multimodal GPU)")
-        print(f"  Whisper Model:   base (CPU forced)")
-        print(f"  Ollama URL:      {self.config.ollama_url}")
-        print("=" * 80 + "\n")
+        model_str = f"{self.config.model} (GPU)"
+        url_str = str(self.config.ollama_url)
+        wake_str = f"'{self.config.wake_word}'"
+        
+        print("\n┌─────────────────────────────────────────────────────────────┐")
+        print("│  NEERON AI  ·  Autonomous Desktop Agent                     │")
+        print("├─────────────────────────────────────────────────────────────┤")
+        print(f"│  Model:      {model_str:<46} │")
+        print(f"│  STT:        Whisper Base (CPU int8)                        │")
+        print(f"│  Wake Word:  {wake_str:<46} │")
+        print(f"│  Endpoint:   {url_str:<46} │")
+        print("└─────────────────────────────────────────────────────────────┘\n")
         
         self.tts = TTSEngine()
         self.stt = STTEngine(self.config)
@@ -60,19 +64,12 @@ class NeeronDaemon:
                 if text:
                     cmd_clean = text.strip().lower()
                     if cmd_clean in ["stop", "cancel", "halt"]:
-                        print("\n" + "=" * 80)
-                        print("[USER VOICE STOP INTERRUPT]: Stop signal received from user!")
-                        print("=" * 80 + "\n")
                         self.tts.speak("Execution stopped.")
                         time.sleep(0.5)
                         continue
                     
-                    print("\n" + "=" * 80)
-                    print("[AUDIO ENGINE PAUSED] Executing command autonomously...")
                     self.agent.process_request(text)
-                    print("[STOP SIGNAL RECEIVED] Task complete. Resuming audio listening for next command.")
-                    print("=" * 80 + "\n")
-                time.sleep(0.5)
+                time.sleep(0.2)
         except KeyboardInterrupt:
             print("\nShutting down Neeron AI...")
         finally:

@@ -441,6 +441,49 @@ class AgentToolRegistry:
             {
                 "type": "function",
                 "function": {
+                    "name": "set_windows_theme",
+                    "description": "Switch Windows OS Theme between Dark Mode and Light Mode instantly.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "mode": {"type": "string", "description": "'dark' or 'light'"}
+                        },
+                        "required": ["mode"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "set_screen_brightness",
+                    "description": "Set screen display brightness level (0-100%).",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "level": {"type": "integer", "description": "Brightness percentage (0-100)"}
+                        },
+                        "required": ["level"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "manage_window_layout",
+                    "description": "Snap target window to 50/50 left/right split, top split, center, maximize, or minimize using Win32 SetWindowPos.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "action": {"type": "string", "description": "'snap_left', 'snap_right', 'snap_top', 'center', 'maximize', 'minimize'"},
+                            "win_title": {"type": "string", "description": "Optional title of target window (defaults to active window)"}
+                        },
+                        "required": ["action"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
                     "name": "execute_shell",
                     "description": "Execute a Windows PowerShell or CMD shell command with full system access.",
                     "parameters": {
@@ -607,6 +650,19 @@ class AgentToolRegistry:
             elif name == "manage_virtual_desktops":
                 action = args.get("action", "list")
                 return self.system_controller.manage_virtual_desktops(action)
+            
+            elif name == "set_windows_theme":
+                mode = args.get("mode", "dark")
+                return self.system_controller.set_windows_theme(mode)
+            
+            elif name == "set_screen_brightness":
+                level = int(args.get("level", 50))
+                return self.system_controller.set_screen_brightness(level)
+            
+            elif name == "manage_window_layout":
+                action = args.get("action", "snap_left")
+                win_title = args.get("win_title", "")
+                return self.system_controller.manage_window_layout(action, win_title)
             
             elif name == "execute_shell":
                 cmd = args.get("command", "")
