@@ -1,4 +1,4 @@
-# 🤖 NEERON AI - COMPREHENSIVE SYSTEM ARCHITECTURE & CODE BLUEPRINT
+# NEERON AI - COMPREHENSIVE SYSTEM ARCHITECTURE & CODE BLUEPRINT
 
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![Ollama Vision](https://img.shields.io/badge/Ollama-Gemma4_Vision-000000?style=for-the-badge&logo=ollama&logoColor=white)](https://ollama.com/)
@@ -10,7 +10,7 @@ Neeron AI is a **100% private, local, voice-activated multimodal desktop agent**
 
 ---
 
-## 📑 TABLE OF CONTENTS
+## TABLE OF CONTENTS
 1. [AI Model Specifications](#1-ai-model-specifications)
 2. [Dynamic Island Floating Glass HUD (`--gui`)](#2-dynamic-island-floating-glass-hud---gui)
 3. [End-to-End System Pipeline & Diagrams](#3-end-to-end-system-pipeline--diagrams)
@@ -326,5 +326,5 @@ python main.py
 
 ---
 
-## 📄 LICENSE
+## LICENSE
 Distributed under the **MIT License**. See `LICENSE` for details.
